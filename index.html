@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Realtime Status Map</title>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
+
+<style>
+body{margin:0;}
+#map{width:100vw;height:100vh;}
+
+/* ===== MARKER BASE ===== */
+.marker{
+  border-radius:50%;
+  transition:opacity .2s, box-shadow .2s, border .2s;
+  box-sizing:border-box;
+}
+
+/* ===== FILTERED ===== */
+.gray{
+  background:#ccc!important;
+  opacity:.35;
+  animation:none!important;
+  box-shadow:none!important;
+  border:none!important;
+}
+
+/* ===== BLINK ===== */
+.force-blink{animation:blink 1s infinite!important;}
+
+/* ===== STATUS COLOR ===== */
+.connecting{width:10px;height:10px;background:red;}
+.offline{width:10px;height:10px;background:hotpink;}
+.telemetry{width:10px;height:10px;background:#4DA6FF;}
+.initializing{width:10px;height:10px;background:#9B59B6;}
+.online{width:10px;height:10px;background:#7EDC8C;}
+.none{width:10px;height:10px;background:#F6F6F6;}
+
+/* ===== BLINK BORDER ===== */
+.force-blink.connecting{border:2px solid #7a0000;box-shadow:0 0 6px rgba(255,0,0,.9);}
+.force-blink.offline{border:2px solid #8b004f;box-shadow:0 0 6px rgba(255,20,147,.9);}
+.force-blink.telemetry{border:2px solid #0b4f8a;box-shadow:0 0 6px rgba(77,166,255,.9);}
+.force-blink.initializing{border:2px solid #4b1f5f;box-shadow:0 0 6px rgba(155,89,182,.9);}
+.force-blink.online{border:2px solid #1f6b36;box-shadow:0 0 6px rgba(126,220,140,.9);}
+.force-blink.none{border:2px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
+
+/* ===== PANEL WRAP (NEW) ===== */
+.panel-wrap{
+  position:absolute;
+  left:10px;
+  top:10px;
+  display:grid;
+  grid-template-columns:max-content;
+  z-index:999;
+}
+
+/* ===== PANEL BOX (NEW) ===== */
+.panel-box{}
+.status-box{margin-bottom:50px;}
+.device-box{margin-bottom:14px;}
+.ack-box{margin-bottom:0;}
+
+/* ===== PANEL ===== */
+.panel{
+  background:rgba(255,255,255,.95);
+  padding:10px 14px;
+  border-radius:8px;
+  font-family:sans-serif;
+  font-size:14px;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+
+/* ===== ROW ===== */
+.row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:6px;
+  cursor:pointer;
+}
+.row:last-child{margin-bottom:0;}
+.active{font-weight:bold;}
+
+/* ===== RESET ===== */
+.reset{
+  color:#1a73e8;
+  font-weight:bold;
+}
+
+/* ===== DOT ===== */
+.dot{
+  width:11px;height:11px;border-radius:50%;box-sizing:border-box;
+}
+.dot-connecting{background:red;}
+.dot-offline{background:hotpink;}
+.dot-telemetry{background:#4DA6FF;}
+.dot-initializing{background:#9B59B6;}
+.dot-online{background:#7EDC8C;}
+.dot-none{background:#F6F6F6;border:1px solid #4D4D4D;}
+
+.force-blink.dot-connecting{border:2px solid #7a0000;box-shadow:0 0 6px rgba(255,0,0,.9);}
+.force-blink.dot-offline{border:2px solid #8b004f;box-shadow:0 0 6px rgba(255,20,147,.9);}
+.force-blink.dot-telemetry{border:2px solid #0b4f8a;box-shadow:0 0 6px rgba(77,166,255,.9);}
+.force-blink.dot-initializing{border:2px solid #4b1f5f;box-shadow:0 0 6px rgba(155,89,182,.9);}
+.force-blink.dot-online{border:2px solid #1f6b36;box-shadow:0 0 6px rgba(126,220,140,.9);}
+.force-blink.dot-none{border:2px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
+
+@keyframes blink{
+  0%{opacity:1}
+  50%{opacity:.2}
+  100%{opacity:1}
+}
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div class="panel-wrap">
+  <!-- STATUS -->
+  <div class="panel-box status-box">
+    <div id="counter" class="panel">
+      <div class="row" data-status="TOTAL">
+        <span class="reset">[Reset]</span> Total: <span id="c_total">0</span>
+      </div>
+      <hr>
+      <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
+      <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline: <span id="c_offline">0</span></div>
+      <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
+      <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
+      <div class="row" data-status="Online"><span class="dot dot-online"></span>Online: <span id="c_online">0</span></div>
+      <div class="row" data-status="none"><span class="dot dot-none"></span>none: <span id="c_none">0</span></div>
+    </div>
+  </div>
+
+  <!-- DEVICE -->
+  <div class="panel-box device-box">
+    <div id="device-filter" class="panel">
+      <div class="row" data-device="ALL">Device ALL: <span id="d_all">0</span></div>
+      <hr>
+      <div class="row" data-device="DAU">DAU: <span id="d_dau">0</span></div>
+      <div class="row" data-device="ROUTER">ROUTER: <span id="d_router">0</span></div>
+      <div class="row" data-device="none">none: <span id="d_none">0</span></div>
+    </div>
+  </div>
+
+  <!-- ACK -->
+  <div class="panel-box ack-box">
+    <div id="ack-filter" class="panel">
+      <div class="row" data-ack="ALL">Acknowledge: <span id="a_all">0</span></div>
+      <hr>
+      <div class="row" data-ack="Yes">Yes: <span id="a_yes">0</span></div>
+      <div class="row" data-ack="No">No: <span id="a_no">0</span></div>
+      <div class="row" data-ack="none">none: <span id="a_none">0</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21rczRzanpqMTVrNDNlcHA3cndudHY2NCJ9.tE7h5N64QMt2FczrH06uCA';
+const API_URL='https://script.google.com/macros/s/AKfycbzbsjn2h6Ycy-pANA4TsvPS0u81D034dD3aIgkqNFqnu5nOZXMCik7aVBrZ33wMG21e/exec';
+
+const VALID_STATUS=new Set(["Online","Connecting","Initializing","Offline","Telemetry Failure"]);
+const VALID_DEVICE=new Set(["DAU","ROUTER"]);
+const VALID_ACK=new Set(["Yes","No"]);
+
+const map=new mapboxgl.Map({
+  container:'map',
+  style:'mapbox://styles/mapbox/streets-v12',
+  center:[100.5,17.5],
+  zoom:6
+});
+
+const markers=[];
+const bounds=new mapboxgl.LngLatBounds();
+let activeStatuses=new Set(),activeDevice=null,activeAck=null;
+
+const zBase={Connecting:50,Offline:40,"Telemetry Failure":30,Initializing:30,Online:10,none:20};
+
+map.on('load',async()=>{
+  const r=await (await fetch(API_URL)).json();
+  r.data.forEach(p=>{
+    if(!p.lat||!p.lng) return;
+
+    const status=VALID_STATUS.has(p.status)?p.status:"none";
+    const device=VALID_DEVICE.has(p.device)?p.device:"none";
+    const ack=VALID_ACK.has(p.acknowledge)?p.acknowledge:"none";
+
+    const cls={Connecting:'connecting',Offline:'offline',"Telemetry Failure":'telemetry',Initializing:'initializing',Online:'online',none:'none'}[status];
+
+    const el=document.createElement('div');
+    el.className=`marker ${cls}`;
+
+    const marker=new mapboxgl.Marker(el)
+      .setLngLat([p.lng,p.lat])
+      .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
+        <b>Site:</b> ${p.siteId}<br>
+        <b>Status:</b> ${status}<br>
+        <b>Device:</b> ${device}<br>
+        <b>Ack:</b> ${ack}
+      `))
+      .addTo(map);
+
+    markers.push({marker,el,status,device,acknowledge:ack});
+    bounds.extend([p.lng,p.lat]);
+  });
+
+  map.fitBounds(bounds,{padding:60});
+
+  activeStatuses.add("Connecting");
+  activeAck="No";
+  document.querySelector('[data-status="Connecting"]').classList.add('active');
+  document.querySelector('[data-ack="No"]').classList.add('active');
+
+  applyFilter();
+});
+
+/* ===== FILTER ===== */
+function byStatus(m){return activeStatuses.size===0||activeStatuses.has(m.status);}
+function byDevice(m){return !activeDevice||m.device===activeDevice;}
+function byAck(m){return !activeAck||m.acknowledge===activeAck;}
+
+function toggleNoneRows(statusNone,deviceNone,ackNone){
+  document.querySelector('[data-status="none"]').style.display=statusNone===0?"none":"";
+  document.querySelector('[data-device="none"]').style.display=deviceNone===0?"none":"";
+  document.querySelector('[data-ack="none"]').style.display=ackNone===0?"none":"";
+}
+
+function applyFilter(){
+  markers.forEach(m=>{
+    const visible=byStatus(m)&&byDevice(m)&&byAck(m);
+    const blink=activeStatuses.size===0?m.status==="Connecting":activeStatuses.has(m.status);
+    m.el.classList.toggle('gray',!visible);
+    m.el.classList.toggle('force-blink',visible&&blink);
+    m.el.style.zIndex=visible?(zBase[m.status]||1):1;
+  });
+
+  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));
+  (activeStatuses.size===0?["Connecting"]:[...activeStatuses]).forEach(s=>{
+    const dot=document.querySelector(`[data-status="${s}"] .dot`);
+    if(dot) dot.classList.add('force-blink');
+  });
+
+  updateCounters();
+}
+
+function updateCounters(){
+  const sBase=markers.filter(m=>byDevice(m)&&byAck(m));
+  const sNone=sBase.filter(m=>m.status==="none").length;
+  c_total.textContent=sBase.length;
+  c_connecting.textContent=sBase.filter(m=>m.status==="Connecting").length;
+  c_offline.textContent=sBase.filter(m=>m.status==="Offline").length;
+  c_telemetry.textContent=sBase.filter(m=>m.status==="Telemetry Failure").length;
+  c_initializing.textContent=sBase.filter(m=>m.status==="Initializing").length;
+  c_online.textContent=sBase.filter(m=>m.status==="Online").length;
+  c_none.textContent=sNone;
+
+  const dBase=markers.filter(m=>byStatus(m)&&byAck(m));
+  const dNone=dBase.filter(m=>m.device==="none").length;
+  d_all.textContent=dBase.length;
+  d_dau.textContent=dBase.filter(m=>m.device==="DAU").length;
+  d_router.textContent=dBase.filter(m=>m.device==="ROUTER").length;
+  d_none.textContent=dNone;
+
+  const aBase=markers.filter(m=>byStatus(m)&&byDevice(m));
+  const aNone=aBase.filter(m=>m.acknowledge==="none").length;
+  a_all.textContent=aBase.length;
+  a_yes.textContent=aBase.filter(m=>m.acknowledge==="Yes").length;
+  a_no.textContent=aBase.filter(m=>m.acknowledge==="No").length;
+  a_none.textContent=aNone;
+
+  toggleNoneRows(sNone,dNone,aNone);
+}
+
+/* ===== EVENTS ===== */
+document.querySelectorAll('[data-status]').forEach(r=>{
+  r.onclick=()=>{
+    const s=r.dataset.status;
+    if(s==="TOTAL"){
+      activeStatuses.clear();activeDevice=null;activeAck=null;
+      document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
+      applyFilter();
+      if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60});
+      return;
+    }
+    activeStatuses.has(s)?activeStatuses.delete(s):activeStatuses.add(s);
+    r.classList.toggle('active');
+    applyFilter();
+  };
+});
+
+document.querySelectorAll('[data-device]').forEach(r=>{
+  r.onclick=()=>{
+    const d=r.dataset.device;
+    activeDevice=(d==="ALL"||activeDevice===d)?null:d;
+    document.querySelectorAll('[data-device]').forEach(x=>x.classList.remove('active'));
+    if(activeDevice) r.classList.add('active');
+    applyFilter();
+  };
+});
+
+document.querySelectorAll('[data-ack]').forEach(r=>{
+  r.onclick=()=>{
+    const a=r.dataset.ack;
+    activeAck=(a==="ALL"||activeAck===a)?null:a;
+    document.querySelectorAll('[data-ack]').forEach(x=>x.classList.remove('active'));
+    if(activeAck) r.classList.add('active');
+    applyFilter();
+  };
+});
+</script>
+</body>
+</html>

@@ -46,20 +46,33 @@ body{margin:0;}
 .force-blink.online{border:2px solid #1f6b36;box-shadow:0 0 6px rgba(126,220,140,.9);}
 .force-blink.none{border:2px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
 
-/* ===== PANEL WRAP (NEW) ===== */
-.panel-wrap{
+/* ===== PANEL GROUP (VERTICAL STACK) ===== */
+.panel-group{
   position:absolute;
   left:10px;
   top:10px;
-  display:grid;
-  grid-template-columns:max-content;
+  display:flex;
+  flex-direction:column;
+  gap:30px;
   z-index:999;
 }
 
-/* ===== PANEL BOX (NEW) ===== */
+/* ===== SEARCH GROUP ===== */
+.search-group{
+  width:auto;
+}
+
+/* ===== PANEL WRAP (STATUS / DEVICE / ACK) ===== */
+.panel-wrap{
+  display:grid;
+  grid-template-columns:max-content;
+  gap:0px; 
+}
+
+/* ===== PANEL BOX ===== */
 .panel-box{}
-.status-box{margin-bottom:50px;}
-.device-box{margin-bottom:14px;}
+.status-box{margin-bottom:10px;}
+.device-box{margin-bottom:10px;}
 .ack-box{margin-bottom:0;}
 
 /* ===== PANEL ===== */
@@ -70,6 +83,8 @@ body{margin:0;}
   font-family:sans-serif;
   font-size:14px;
   box-shadow:0 2px 6px rgba(0,0,0,.25);
+  
+  min-width:120px; /*กำหนดความแคบต่ำสุด*/
 }
 
 /* ===== ROW ===== */
@@ -112,49 +127,111 @@ body{margin:0;}
   50%{opacity:.2}
   100%{opacity:1}
 }
+
+/* ===== POPUP Z ===== */
+.mapboxgl-popup{z-index:15!important;}
+
+/* ===== RESET BUTTON (PRIMARY ACTION) ===== */
+.reset-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 8px;
+  border-radius:6px;
+  background:#1a73e8;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.reset-btn:hover{
+  background:#1558b0;
+  box-shadow:0 2px 6px rgba(26,115,232,.4);
+}
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div class="panel-wrap">
-  <!-- STATUS -->
-  <div class="panel-box status-box">
-    <div id="counter" class="panel">
-      <div class="row" data-status="TOTAL">
-        <span class="reset">[Reset]</span> Total: <span id="c_total">0</span>
+<!-- ===== PANEL GROUP (VERTICAL) ===== -->
+<div class="panel-group">
+
+  <!-- ===== SEARCH GROUP ===== -->
+  <div class="search-group">
+
+    <div class="panel-box">
+      <div class="panel" style="display:flex;gap:6px;">
+        <input id="searchInput" type="text"
+          placeholder="🔍 Search anything..."
+          style="width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;">
+        <button id="searchBtn"
+          style="padding:6px 10px;border:none;border-radius:4px;
+                 background:#1a73e8;color:white;cursor:pointer;">
+          Search
+        </button>
+        <button id="clearSearchBtn"
+          style="padding:6px 8px;border:none;border-radius:4px;cursor:pointer;">
+          ✕
+        </button>
       </div>
-      <hr>
-      <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
-      <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline: <span id="c_offline">0</span></div>
-      <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
-      <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
-      <div class="row" data-status="Online"><span class="dot dot-online"></span>Online: <span id="c_online">0</span></div>
-      <div class="row" data-status="none"><span class="dot dot-none"></span>none: <span id="c_none">0</span></div>
     </div>
+
+    <!-- SEARCH MODE (เหมือนเดิม) -->
+    <div id="searchIndicator" class="panel-box" style="display:none;margin-top:6px;">
+      <div class="panel" style="background:#e8f0fe;color:#1a73e8;">
+        🔍 Search Mode :
+        <b><span id="searchCount">0</span></b> result(s)
+      </div>
+    </div>
+
   </div>
 
-  <!-- DEVICE -->
-  <div class="panel-box device-box">
-    <div id="device-filter" class="panel">
-      <div class="row" data-device="ALL">Device ALL: <span id="d_all">0</span></div>
-      <hr>
-      <div class="row" data-device="DAU">DAU: <span id="d_dau">0</span></div>
-      <div class="row" data-device="ROUTER">ROUTER: <span id="d_router">0</span></div>
-      <div class="row" data-device="none">none: <span id="d_none">0</span></div>
-    </div>
-  </div>
+  <!-- ===== STATUS / DEVICE / ACK ===== -->
+  <div class="panel-wrap">
 
-  <!-- ACK -->
-  <div class="panel-box ack-box">
-    <div id="ack-filter" class="panel">
-      <div class="row" data-ack="ALL">Acknowledge: <span id="a_all">0</span></div>
-      <hr>
-      <div class="row" data-ack="Yes">Yes: <span id="a_yes">0</span></div>
-      <div class="row" data-ack="No">No: <span id="a_no">0</span></div>
-      <div class="row" data-ack="none">none: <span id="a_none">0</span></div>
+    <!-- STATUS -->
+    <div class="panel-box status-box">
+      <div id="counter" class="panel">
+        <div class="row" data-status="TOTAL">
+          <span class="reset-btn" title="Clear Status / Device / Ack / Search">
+            ⟳ Reset
+          </span>
+          Total: <span id="c_total">0</span>
+        </div>
+        <hr>
+        <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
+        <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline: <span id="c_offline">0</span></div>
+        <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
+        <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
+        <div class="row" data-status="Online"><span class="dot dot-online"></span>Online: <span id="c_online">0</span></div>
+        <div class="row" data-status="none"><span class="dot dot-none"></span>none: <span id="c_none">0</span></div>
+      </div>
     </div>
+
+    <!-- DEVICE -->
+    <div class="panel-box device-box">
+      <div id="device-filter" class="panel">
+        <div class="row" data-device="ALL">Device ALL: <span id="d_all">0</span></div>
+        <hr>
+        <div class="row" data-device="DAU">DAU: <span id="d_dau">0</span></div>
+        <div class="row" data-device="ROUTER">ROUTER: <span id="d_router">0</span></div>
+        <div class="row" data-device="none">none: <span id="d_none">0</span></div>
+      </div>
+    </div>
+
+    <!-- ACK -->
+    <div class="panel-box ack-box">
+      <div id="ack-filter" class="panel">
+        <div class="row" data-ack="ALL">Acknowledge: <span id="a_all">0</span></div>
+        <hr>
+        <div class="row" data-ack="Yes">Yes: <span id="a_yes">0</span></div>
+        <div class="row" data-ack="No">No: <span id="a_no">0</span></div>
+        <div class="row" data-ack="none">none: <span id="a_none">0</span></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -177,6 +254,9 @@ const markers=[];
 const bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
 
+// ★ ADD
+let searchResultSet=null;
+
 const zBase={Connecting:50,Offline:40,"Telemetry Failure":30,Initializing:30,Online:10,none:20};
 
 map.on('load',async()=>{
@@ -197,13 +277,32 @@ map.on('load',async()=>{
       .setLngLat([p.lng,p.lat])
       .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
+        <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
         <b>Status:</b> ${status}<br>
         <b>Device:</b> ${device}<br>
-        <b>Ack:</b> ${ack}
+        <b>Ack:</b> ${ack}<br><br>
+        <button onclick="window.open(
+          'https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}',
+          '_blank'
+        )"
+        style="padding:6px 10px;border:none;border-radius:4px;background:#1a73e8;color:white;cursor:pointer;">
+          🚗 Directions
+        </button>
       `))
       .addTo(map);
 
-    markers.push({marker,el,status,device,acknowledge:ack});
+    markers.push({
+      marker,
+      el,
+      status,
+      device,
+      acknowledge:ack,
+      siteId:p.siteId,
+      operationId:p.operationId,
+      lat:p.lat,
+      lng:p.lng
+    });
+
     bounds.extend([p.lng,p.lat]);
   });
 
@@ -247,7 +346,9 @@ function applyFilter(){
 }
 
 function updateCounters(){
-  const sBase=markers.filter(m=>byDevice(m)&&byAck(m));
+  const base=searchResultSet ?? markers;
+
+  const sBase=base.filter(m=>byDevice(m)&&byAck(m));
   const sNone=sBase.filter(m=>m.status==="none").length;
   c_total.textContent=sBase.length;
   c_connecting.textContent=sBase.filter(m=>m.status==="Connecting").length;
@@ -257,14 +358,14 @@ function updateCounters(){
   c_online.textContent=sBase.filter(m=>m.status==="Online").length;
   c_none.textContent=sNone;
 
-  const dBase=markers.filter(m=>byStatus(m)&&byAck(m));
+  const dBase=base.filter(m=>byStatus(m)&&byAck(m));
   const dNone=dBase.filter(m=>m.device==="none").length;
   d_all.textContent=dBase.length;
   d_dau.textContent=dBase.filter(m=>m.device==="DAU").length;
   d_router.textContent=dBase.filter(m=>m.device==="ROUTER").length;
   d_none.textContent=dNone;
 
-  const aBase=markers.filter(m=>byStatus(m)&&byDevice(m));
+  const aBase=base.filter(m=>byStatus(m)&&byDevice(m));
   const aNone=aBase.filter(m=>m.acknowledge==="none").length;
   a_all.textContent=aBase.length;
   a_yes.textContent=aBase.filter(m=>m.acknowledge==="Yes").length;
@@ -274,6 +375,59 @@ function updateCounters(){
   toggleNoneRows(sNone,dNone,aNone);
 }
 
+/* ===== SEARCH ===== */
+function objectToSearchString(obj){
+  return Object.values(obj)
+    .filter(v=>v!==null && v!==undefined && typeof v!=="object" && typeof v!=="function")
+    .map(v=>String(v).toLowerCase())
+    .join(" ");
+}
+
+function runSearch(){
+  const q=searchInput.value.trim().toLowerCase();
+  if(!q) return;
+
+  const matched=markers.filter(m=>objectToSearchString(m).includes(q));
+  if(matched.length===0){alert("ไม่พบข้อมูลที่ค้นหา");return;}
+
+  searchResultSet=matched;
+  searchIndicator.style.display="";
+  searchCount.textContent=matched.length;
+
+  markers.forEach(m=>{
+    m.el.classList.add('gray');
+    m.el.classList.remove('force-blink');
+    m.el.style.zIndex=1;
+  });
+
+  const b=new mapboxgl.LngLatBounds();
+  matched.forEach(m=>{
+    m.el.classList.remove('gray');
+    m.el.classList.add('force-blink');
+    m.el.style.zIndex=999;
+    b.extend([m.lng,m.lat]);
+  });
+
+  updateCounters();
+
+  matched.length===1
+    ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
+    : map.fitBounds(b,{padding:80});
+}
+
+function clearSearch(){
+  searchInput.value="";
+  searchResultSet=null;
+  searchIndicator.style.display="none";
+  applyFilter();
+}
+
+searchBtn.onclick=runSearch;
+clearSearchBtn.onclick=clearSearch;
+searchInput.addEventListener('keypress',e=>{
+  if(e.key==="Enter") runSearch();
+});
+
 /* ===== EVENTS ===== */
 document.querySelectorAll('[data-status]').forEach(r=>{
   r.onclick=()=>{
@@ -281,7 +435,7 @@ document.querySelectorAll('[data-status]').forEach(r=>{
     if(s==="TOTAL"){
       activeStatuses.clear();activeDevice=null;activeAck=null;
       document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
-      applyFilter();
+      clearSearch();
       if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60});
       return;
     }
@@ -313,5 +467,3 @@ document.querySelectorAll('[data-ack]').forEach(r=>{
 </script>
 </body>
 </html>
-
-

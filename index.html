@@ -210,7 +210,7 @@ body{margin:0;}
           Total: <span id="c_total">0</span>
         </div>
         <hr>
-        <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline: <span id="c_offline">0</span></div>
+        <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline (Offscan): <span id="c_offline">0</span></div>
         <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
         <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
         <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
@@ -271,7 +271,10 @@ let searchActive=false;
 let filterActive=false;
 // -end-
 
-const zBase={Offline:40,Connecting:50,"Telemetry Failure":30,Initializing:30,Online:10,none:20};
+// zIndex priority (higher = more important)
+// Search hit: 999
+// Connecting > Offline > Failure > Initializing > none > Online
+const zBase={Offline:60,Connecting:70,"Telemetry Failure":50,Initializing:40,Online:10,none:30,_default:20};
 
 map.on('load',async()=>{
   const r=await (await fetch(API_URL)).json();
@@ -539,7 +542,7 @@ function applyFilter(){
 
     m.el.classList.toggle('gray', !visible);
     m.el.classList.toggle('force-blink', visible && blink);
-    m.el.style.zIndex = visible ? (zBase[m.status]||1) : 1;
+    m.el.style.zIndex = visible ? (zBase[m.status] ?? zBase._default) : 1;
   });
 
   document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));

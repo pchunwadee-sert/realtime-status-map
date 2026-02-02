@@ -31,20 +31,26 @@ body{margin:0;}
 .force-blink{animation:blink 1s infinite!important;}
 
 /* ===== STATUS COLOR ===== */
-.connecting{width:10px;height:10px;background:red;}
-.offline{width:10px;height:10px;background:hotpink;}
-.telemetry{width:10px;height:10px;background:#4DA6FF;}
-.initializing{width:10px;height:10px;background:#9B59B6;}
-.online{width:10px;height:10px;background:#7EDC8C;}
-.none{width:10px;height:10px;background:#F6F6F6;}
+.offline{width:8.5px;height:8.5px;background:#FF0000;}
+.connecting{width:8.5px;height:8.5px;background:#FF9900;}
+.telemetry{width:8.5px;height:8.5px;background:#FFFF00;}
+.initializing{width:8.5px;height:8.5px;background:#00FF00;}
+.online{width:8.5px;height:8.5px;background:#009900;}
+.none{width:8.5px;height:8.5px;background:#F6F6F6;}
 
 /* ===== BLINK BORDER ===== */
-.force-blink.connecting{border:2px solid #7a0000;box-shadow:0 0 6px rgba(255,0,0,.9);}
-.force-blink.offline{border:2px solid #8b004f;box-shadow:0 0 6px rgba(255,20,147,.9);}
-.force-blink.telemetry{border:2px solid #0b4f8a;box-shadow:0 0 6px rgba(77,166,255,.9);}
-.force-blink.initializing{border:2px solid #4b1f5f;box-shadow:0 0 6px rgba(155,89,182,.9);}
-.force-blink.online{border:2px solid #1f6b36;box-shadow:0 0 6px rgba(126,220,140,.9);}
-.force-blink.none{border:2px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
+.force-blink.offline{border:1.5px solid #990000;box-shadow:0 0 6px rgba(255,0,0,.7);}
+.force-blink.connecting{border:1.5px solid #CC7A00;box-shadow:0 0 6px rgba(255,153,0,.7);}
+.force-blink.telemetry{border:1.5px solid #B3B300;box-shadow:0 0 6px rgba(255,255,0,.7);}
+.force-blink.initializing{border:1.5px solid #009900;box-shadow:0 0 6px rgba(0,255,0,.7);}
+.force-blink.online{border:1.5px solid #1B5E20;box-shadow:0 0 6px rgba(46,125,50,.7);}
+.force-blink.none{border:1.5px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.7);}
+
+@keyframes blink{
+  0%{opacity:1}
+  50%{opacity:.2}
+  100%{opacity:1}
+}
 
 /* ===== PANEL GROUP (VERTICAL STACK) ===== */
 .panel-group{
@@ -83,8 +89,7 @@ body{margin:0;}
   font-family:sans-serif;
   font-size:14px;
   box-shadow:0 2px 6px rgba(0,0,0,.25);
-  
-  min-width:120px; /*กำหนดความแคบต่ำสุด*/
+  min-width:120px;
 }
 
 /* ===== ROW ===== */
@@ -106,27 +111,21 @@ body{margin:0;}
 
 /* ===== DOT ===== */
 .dot{
-  width:11px;height:11px;border-radius:50%;box-sizing:border-box;
+  width:10px;height:10px;border-radius:50%;box-sizing:border-box;
 }
-.dot-connecting{background:red;}
-.dot-offline{background:hotpink;}
-.dot-telemetry{background:#4DA6FF;}
-.dot-initializing{background:#9B59B6;}
-.dot-online{background:#7EDC8C;}
+.dot-offline{background:#FF0000;border:1px solid #990000;}
+.dot-connecting{background:#FF9900;border:1px solid #CC7A00;}
+.dot-telemetry{background:#FFFF00;border:1px solid #B3B300;}
+.dot-initializing{background:#00FF00;border:1px solid #009900;}
+.dot-online{background:#009900;border:1px solid #1B5E20;}
 .dot-none{background:#F6F6F6;border:1px solid #4D4D4D;}
 
-.force-blink.dot-connecting{border:2px solid #7a0000;box-shadow:0 0 6px rgba(255,0,0,.9);}
-.force-blink.dot-offline{border:2px solid #8b004f;box-shadow:0 0 6px rgba(255,20,147,.9);}
-.force-blink.dot-telemetry{border:2px solid #0b4f8a;box-shadow:0 0 6px rgba(77,166,255,.9);}
-.force-blink.dot-initializing{border:2px solid #4b1f5f;box-shadow:0 0 6px rgba(155,89,182,.9);}
-.force-blink.dot-online{border:2px solid #1f6b36;box-shadow:0 0 6px rgba(126,220,140,.9);}
-.force-blink.dot-none{border:2px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
-
-@keyframes blink{
-  0%{opacity:1}
-  50%{opacity:.2}
-  100%{opacity:1}
-}
+.force-blink.dot-offline{border:1.5px solid #990000;box-shadow:0 0 6px rgba(255,0,0,.9);}
+.force-blink.dot-connecting{border:1.5px solid #CC7A00;box-shadow:0 0 6px rgba(255,153,0,.9);}
+.force-blink.dot-telemetry{border:1.5px solid #B3B300;box-shadow:0 0 6px rgba(255,255,0,.9);}
+.force-blink.dot-initializing{border:1.5px solid #009900;box-shadow:0 0 6px rgba(0,255,0,.9);}
+.force-blink.dot-online{border:1.5px solid #1B5E20;box-shadow:0 0 6px rgba(46,125,50,.9);}
+.force-blink.dot-none{border:1.5px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.9);}
 
 /* ===== POPUP Z ===== */
 .mapboxgl-popup{z-index:15!important;}
@@ -171,24 +170,34 @@ body{margin:0;}
                  background:#1a73e8;color:white;cursor:pointer;">
           Search
         </button>
+      </div>
+    </div>
+
+    <div id="searchIndicator" class="panel-box" style="display:none;margin-top:6px;">
+      <div class="panel"
+        style="background:#e8f0fe;color:#1a73e8;
+               display:flex;align-items:center;gap:8px;">
+        <span>
+          🔍 Search Mode :
+          <b><span id="searchCount">0</span></b> result(s)
+        </span>
+
         <button id="clearSearchBtn"
-          style="padding:6px 8px;border:none;border-radius:4px;cursor:pointer;">
+          title="Clear Search"
+          style="margin-left:auto;
+                 padding:2px 8px;
+                 border:none;
+                 border-radius:6px;
+                 background:#1a73e8;
+                 color:white;
+                 cursor:pointer;">
           ✕
         </button>
       </div>
     </div>
 
-    <!-- SEARCH MODE (เหมือนเดิม) -->
-    <div id="searchIndicator" class="panel-box" style="display:none;margin-top:6px;">
-      <div class="panel" style="background:#e8f0fe;color:#1a73e8;">
-        🔍 Search Mode :
-        <b><span id="searchCount">0</span></b> result(s)
-      </div>
-    </div>
-
   </div>
 
-  <!-- ===== STATUS / DEVICE / ACK ===== -->
   <div class="panel-wrap">
 
     <!-- STATUS -->
@@ -201,8 +210,8 @@ body{margin:0;}
           Total: <span id="c_total">0</span>
         </div>
         <hr>
-        <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
         <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline: <span id="c_offline">0</span></div>
+        <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
         <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
         <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
         <div class="row" data-status="Online"><span class="dot dot-online"></span>Online: <span id="c_online">0</span></div>
@@ -257,7 +266,12 @@ let activeStatuses=new Set(),activeDevice=null,activeAck=null;
 // ★ ADD
 let searchResultSet=null;
 
-const zBase={Connecting:50,Offline:40,"Telemetry Failure":30,Initializing:30,Online:10,none:20};
+// -start- ★ ADD : popup permission state (allow popup only when Marker label is visible)
+let searchActive=false;
+let filterActive=false;
+// -end-
+
+const zBase={Offline:40,Connecting:50,"Telemetry Failure":30,Initializing:30,Online:10,none:20};
 
 map.on('load',async()=>{
   const r=await (await fetch(API_URL)).json();
@@ -291,6 +305,22 @@ map.on('load',async()=>{
       `))
       .addTo(map);
 
+      // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
+      el.addEventListener('click',e=>{
+        const m=markers.find(x=>x.el===el);
+        if(!m) return;
+
+        const allowPopup =
+          (!searchActive || m._passSearch) &&
+          (!filterActive || m._passFilter);
+
+        if(!allowPopup){
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      });
+      // -end- 
+
     markers.push({
       marker,
       el,
@@ -300,7 +330,13 @@ map.on('load',async()=>{
       siteId:p.siteId,
       operationId:p.operationId,
       lat:p.lat,
-      lng:p.lng
+      lng:p.lng,
+
+      // -start- ★ ADD : search / filter flags (allow popup only when Marker label is visible)
+      _passSearch:true,
+      _passFilter:true
+      // -end-
+
     });
 
     bounds.extend([p.lng,p.lat]);
@@ -325,24 +361,6 @@ function toggleNoneRows(statusNone,deviceNone,ackNone){
   document.querySelector('[data-status="none"]').style.display=statusNone===0?"none":"";
   document.querySelector('[data-device="none"]').style.display=deviceNone===0?"none":"";
   document.querySelector('[data-ack="none"]').style.display=ackNone===0?"none":"";
-}
-
-function applyFilter(){
-  markers.forEach(m=>{
-    const visible=byStatus(m)&&byDevice(m)&&byAck(m);
-    const blink=activeStatuses.size===0?m.status==="Connecting":activeStatuses.has(m.status);
-    m.el.classList.toggle('gray',!visible);
-    m.el.classList.toggle('force-blink',visible&&blink);
-    m.el.style.zIndex=visible?(zBase[m.status]||1):1;
-  });
-
-  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));
-  (activeStatuses.size===0?["Connecting"]:[...activeStatuses]).forEach(s=>{
-    const dot=document.querySelector(`[data-status="${s}"] .dot`);
-    if(dot) dot.classList.add('force-blink');
-  });
-
-  updateCounters();
 }
 
 function updateCounters(){
@@ -383,12 +401,26 @@ function objectToSearchString(obj){
     .join(" ");
 }
 
+/* ★★★ UPDATED SEARCH (Search + Status + Device + Ack) ★★★ */
 function runSearch(){
   const q=searchInput.value.trim().toLowerCase();
   if(!q) return;
 
-  const matched=markers.filter(m=>objectToSearchString(m).includes(q));
-  if(matched.length===0){alert("ไม่พบข้อมูลที่ค้นหา");return;}
+  // -start- ★ ADD : mark search active (allow popup only when Marker label is visible)
+  searchActive=true;
+  // -end-
+
+  const searched=markers.filter(m=>objectToSearchString(m).includes(q));
+  if(searched.length===0){
+    alert("ไม่พบข้อมูลที่ค้นหา");
+    return;
+  }
+
+  const matched=searched.filter(m=>byStatus(m)&&byDevice(m)&&byAck(m));
+  if(matched.length===0){
+    alert("พบข้อมูลจาก Search แต่ไม่ตรงกับ Status / Device / Ack");
+    return;
+  }
 
   searchResultSet=matched;
   searchIndicator.style.display="";
@@ -398,6 +430,10 @@ function runSearch(){
     m.el.classList.add('gray');
     m.el.classList.remove('force-blink');
     m.el.style.zIndex=1;
+
+    // -start- ★ ADD (allow popup only when Marker label is visible)
+    m._passSearch=false;
+    // -end-
   });
 
   const b=new mapboxgl.LngLatBounds();
@@ -406,6 +442,10 @@ function runSearch(){
     m.el.classList.add('force-blink');
     m.el.style.zIndex=999;
     b.extend([m.lng,m.lat]);
+
+    // -start- ★ ADD (allow popup only when Marker label is visible)
+    m._passSearch=true;
+    // -end-
   });
 
   updateCounters();
@@ -419,6 +459,12 @@ function clearSearch(){
   searchInput.value="";
   searchResultSet=null;
   searchIndicator.style.display="none";
+
+  // -start- ★ ADD (allow popup only when Marker label is visible)
+  searchActive=false;
+  markers.forEach(m=>m._passSearch=true);
+  // -end-
+
   applyFilter();
 }
 
@@ -433,7 +479,9 @@ document.querySelectorAll('[data-status]').forEach(r=>{
   r.onclick=()=>{
     const s=r.dataset.status;
     if(s==="TOTAL"){
-      activeStatuses.clear();activeDevice=null;activeAck=null;
+      activeStatuses.clear();
+      activeDevice=null;
+      activeAck=null;
       document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
       clearSearch();
       if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60});
@@ -464,6 +512,44 @@ document.querySelectorAll('[data-ack]').forEach(r=>{
     applyFilter();
   };
 });
+
+/* ===== FILTER ===== */
+function applyFilter(){
+
+  const base = searchResultSet ?? markers;
+
+  // -start- ★ ADD : filter active state (allow popup only when Marker label is visible)
+  filterActive =
+    activeStatuses.size>0 ||
+    activeDevice!==null ||
+    activeAck!==null;
+  // -end-
+
+  markers.forEach(m=>{
+    const inBase = base.includes(m);
+    const visible = inBase && byStatus(m) && byDevice(m) && byAck(m);
+
+    // -start- ★ ADD (allow popup only when Marker label is visible)
+    m._passFilter = visible;
+    // -end-
+
+    const blink = activeStatuses.size===0
+      ? m.status==="Connecting"
+      : activeStatuses.has(m.status);
+
+    m.el.classList.toggle('gray', !visible);
+    m.el.classList.toggle('force-blink', visible && blink);
+    m.el.style.zIndex = visible ? (zBase[m.status]||1) : 1;
+  });
+
+  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));
+  (activeStatuses.size===0?["Connecting"]:[...activeStatuses]).forEach(s=>{
+    const dot=document.querySelector(`[data-status="${s}"] .dot`);
+    if(dot) dot.classList.add('force-blink');
+  });
+
+  updateCounters();
+}
 </script>
 </body>
 </html>

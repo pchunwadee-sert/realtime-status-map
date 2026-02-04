@@ -295,6 +295,8 @@ map.on('load',async()=>{
       .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
+		<b>IP:</b> ${p.ipAddress ?? "-"}<br> 
+		<b>XY:</b> ${p.lat}, ${p.lng}<br>  
         <b>Status:</b> ${status}<br>
         <b>Device:</b> ${device}<br>
         <b>Ack:</b> ${ack}<br><br>
@@ -332,6 +334,7 @@ map.on('load',async()=>{
       acknowledge:ack,
       siteId:p.siteId,
       operationId:p.operationId,
+	  ipAddress:p.ipAddress,  
       lat:p.lat,
       lng:p.lng,
 

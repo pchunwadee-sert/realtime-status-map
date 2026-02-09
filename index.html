@@ -112,6 +112,10 @@ body{margin:0;}
 /* ===== DOT ===== */
 .dot{
   width:10px;height:10px;border-radius:50%;box-sizing:border-box;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.dot.force-blink{
+  transform: scale(1.25);
 }
 .dot-offline{background:#FF0000;border:1px solid #990000;}
 .dot-connecting{background:#FF9900;border:1px solid #CC7A00;}

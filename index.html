@@ -302,8 +302,8 @@ map.on('load',async()=>{
 	
 	// ----- เริ่ม: แบบใหม่ -----
 	// normalize status ด้วย word boundary (รองรับคำเต็มเท่านั้น) และ ไม่สนตัวพิมพ์เล็ก/ใหญ่
-    let rawStatus = p.status ?? "";
-    let status =
+    const rawStatus = p.status ?? "";
+    const status =
       [...VALID_STATUS].find(s => 
 	    new RegExp(`\\b${s}\\b`, "i").test(rawStatus) 
       ) || "none";

@@ -214,7 +214,7 @@ body{margin:0;}
           Total: <span id="c_total">0</span>
         </div>
         <hr>
-        <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline (Offscan): <span id="c_offline">0</span></div>
+        <div class="row" data-status="Offline"><span class="dot dot-offline"></span>Offline /Offscan: <span id="c_offline">0</span></div>
         <div class="row" data-status="Connecting"><span class="dot dot-connecting"></span>Connecting: <span id="c_connecting">0</span></div>
         <div class="row" data-status="Telemetry Failure"><span class="dot dot-telemetry"></span>Telemetry: <span id="c_telemetry">0</span></div>
         <div class="row" data-status="Initializing"><span class="dot dot-initializing"></span>Initializing: <span id="c_initializing">0</span></div>
@@ -254,7 +254,7 @@ mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21rczRzanpqMTVrNDN
 
 // --- ล็อก API ---
 const API_KEY="CHANGE_ME_TO_LONG_RANDOM_STRING";
-const APP_NAME="realtime-map";
+const APP_NAME="REALTIME-MAP";
 const API_BASE='https://script.google.com/macros/s/AKfycbzbsjn2h6Ycy-pANA4TsvPS0u81D034dD3aIgkqNFqnu5nOZXMCik7aVBrZ33wMG21e/exec';
 
 const API_URL = `${API_BASE}?key=${encodeURIComponent(API_KEY)}&app=${encodeURIComponent(APP_NAME)}`;
@@ -294,7 +294,21 @@ map.on('load',async()=>{
   r.data.forEach(p=>{
     if(!p.lat||!p.lng) return;
 
-    const status=VALID_STATUS.has(p.status)?p.status:"none";
+    // ===== การวิเคราะห์ข้อมูล VALID_STATUS =====
+	//
+	// ----- เริ่ม: แบบเดิม -----
+    //const status=VALID_STATUS.has(p.status)?p.status:"none";
+	// ----- จบ: แบบเดิม -----
+	
+	// ----- เริ่ม: แบบใหม่ -----
+	// normalize status ด้วย word boundary (รองรับคำเต็มเท่านั้น) และ ไม่สนตัวพิมพ์เล็ก/ใหญ่
+    let rawStatus = p.status ?? "";
+    let status =
+      [...VALID_STATUS].find(s => 
+	    new RegExp(`\\b${s}\\b`, "i").test(rawStatus) 
+      ) || "none";
+   	// ----- จบ: แบบใหม่ -----
+	
     const device=VALID_DEVICE.has(p.device)?p.device:"none";
     const ack=VALID_ACK.has(p.acknowledge)?p.acknowledge:"none";
 

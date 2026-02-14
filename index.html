@@ -52,6 +52,12 @@ body{margin:0;}
   100%{opacity:1}
 }
 
+/* ===== WRL BLINK ===== */
+.wrl-blink{
+  animation:blink 0.5s infinite;
+  box-shadow:0 0 6px rgba(255,0,0,.8);
+}
+
 /* ===== PANEL GROUP (VERTICAL STACK) ===== */
 .panel-group{
   position:absolute;
@@ -152,10 +158,60 @@ body{margin:0;}
   background:#1558b0;
   box-shadow:0 2px 6px rgba(26,115,232,.4);
 }
+
+/* ========================= */
+/*    WRL Toggle Button      */
+/* ========================= */
+
+/* ทำให้ map เป็นตำแหน่งอ้างอิง */
+#map {
+  position: relative;
+}
+
+/* กล่องควบคุมปุ่ม */
+.map-control {
+  position: absolute;   /* ลอย */
+  top: 15px;            /* ห่างจากขอบบน */
+  right: 15px;          /* ห่างจากขอบขวา */
+  z-index: 1000;        /* ให้อยู่เหนือ panel อื่น */
+}
+
+/* ปุ่ม */
+#btnWRL {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+
+/* ตอนเอาเมาส์วาง */
+#btnWRL:hover {
+  background: #f2f2f2;
+}
+
+/* สถานะ OFF */
+#btnWRL.off {
+  background: #e0e0e0;
+  color: #666;
+}
+/* ========================= */
+
 </style>
 </head>
 
 <body>
+
+<!--  กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF -->  
+<div class="map-control">
+  <button id="btnWRL" class="off" style="display:none">WRL : OFF</button>  
+</div>
+
+
 <div id="map"></div>
 
 <!-- ===== PANEL GROUP (VERTICAL) ===== -->
@@ -258,6 +314,7 @@ const APP_NAME="REALTIME-MAP";
 const API_BASE='https://script.google.com/macros/s/AKfycbzbsjn2h6Ycy-pANA4TsvPS0u81D034dD3aIgkqNFqnu5nOZXMCik7aVBrZ33wMG21e/exec';
 
 const API_URL = `${API_BASE}?key=${encodeURIComponent(API_KEY)}&app=${encodeURIComponent(APP_NAME)}`;
+const API_WRL = `${API_URL}&layer=wrl`;
 // --------------
 
 const VALID_STATUS=new Set(["Online","Connecting","Initializing","Offline","Telemetry Failure"]);
@@ -281,6 +338,9 @@ const map=new mapboxgl.Map({
 });
 
 const markers=[];
+const wrlMarkers=[];
+let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
+
 const bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
 
@@ -293,13 +353,104 @@ let filterActive=false;
 // -end-
 
 // zIndex priority (higher = more important)
-// Search hit: 999
-// Connecting > Offline > Failure > Initializing > none > Online
+const Z_INDEX = {selected: 1000, wrl_false: 110, wrl_true: 100, hidden: 1};
 const zBase={Offline:60,Connecting:70,"Telemetry Failure":50,Initializing:40,Online:10,none:30,_default:20};
 
+async function loadWRL(){
+  try{
+    const response = await fetch(API_WRL);
+    const r = await response.json();
+
+    if(!r || !r.success || !Array.isArray(r.data)){
+      console.warn("WRL load failed");
+      return;
+    }
+    // 🧹 ป้องกัน marker ซ้อน
+    wrlMarkers.forEach(m=>m.remove());
+    wrlMarkers.length=0;
+
+    r.data.forEach(p=>{
+
+      // ✅ ตรวจ lat/lng แบบปลอดภัย
+      if(p.lat == null || p.lng == null) return;
+
+      const el=document.createElement('div');
+      el.style.width="6.5px";
+      el.style.height="6.5px";
+      el.style.borderRadius="50%";  //"50%" >> วงกลม
+
+      const isFalse = String(p.status).toLowerCase() === "false";
+
+      // 🎯 สีพื้นของ WRL แยกชัดเจน ระหว่าง  false หรือ true
+      if (isFalse) {
+        el.style.backgroundColor = "rgba(255,0,0,0.55)";   // false เข้ม
+        el.style.border = "1.5px solid #FF0000";
+        el.style.zIndex = Z_INDEX.wrl_false;
+        el.classList.add("wrl-blink");                     // กระพริบเฉพาะ false
+      } else {
+        el.style.backgroundColor = "rgba(0,0,255,0.15)";   // true เดิม
+        el.style.border = "1.5px solid #0000FF";
+        el.style.zIndex = Z_INDEX.wrl_true;
+      }
+
+      // ✅ สร้าง popup WRL
+      const popup = new mapboxgl.Popup({
+        offset: 10,
+        closeButton: true
+      }).setHTML(`
+        <div style="font-size:13px;font-weight:600;">
+          ${p.site ?? "-"}
+        </div>
+      `);
+
+      // ✅ สร้าง marker + ผูก popup
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([Number(p.lng), Number(p.lat)])
+        .setPopup(popup);
+
+      if (wrlVisible) {
+        marker.addTo(map);
+      }
+	  
+      wrlMarkers.push(marker);
+    });
+
+    document.getElementById("btnWRL").style.display = "block";
+	
+  }catch(e){
+    console.error("WRL load error:",e);
+  }
+}
+
+function toggleWRL(){
+  wrlVisible = !wrlVisible;
+  const btn = document.getElementById("btnWRL");
+
+  if(wrlVisible){
+    // แสดง marker ทั้งหมด
+    wrlMarkers.forEach(m => m.addTo(map));
+    btn.innerText = "WRL : ON";
+    btn.classList.remove("off");
+
+  }else{
+    // ซ่อน marker ทั้งหมด
+    wrlMarkers.forEach(m => m.remove());
+    btn.innerText = "WRL : OFF";
+    btn.classList.add("off");
+
+  }
+}
 
 map.on('load',async()=>{
-  const r = await (await fetch(API_URL)).json();
+  
+  const res = await fetch(API_URL);
+  const r = await res.json();
+
+  if(!r || !r.success || !Array.isArray(r.data)){
+    console.warn("MAIN load failed");
+    return;
+  }
+  
   r.data.forEach(p=>{
     if(!p.lat||!p.lng) return;
 
@@ -324,7 +475,7 @@ map.on('load',async()=>{
     el.className=`marker ${cls}`;
 
     const marker=new mapboxgl.Marker(el)
-      .setLngLat([p.lng,p.lat])
+      .setLngLat([Number(p.lng), Number(p.lat)])
       .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
@@ -378,7 +529,7 @@ map.on('load',async()=>{
 
     });
 
-    bounds.extend([p.lng,p.lat]);
+    bounds.extend([Number(p.lng), Number(p.lat)]);
   });
 
   map.fitBounds(bounds,{padding:60});
@@ -389,6 +540,11 @@ map.on('load',async()=>{
   document.querySelector('[data-ack="No"]').classList.add('active');
 
   applyFilter();
+
+  await loadWRL();
+  
+  document.getElementById("btnWRL").addEventListener("click", toggleWRL);
+  
 });
 
 /* ===== FILTER ===== */
@@ -479,7 +635,7 @@ function runSearch(){
   matched.forEach(m=>{
     m.el.classList.remove('gray');
     m.el.classList.add('force-blink');
-    m.el.style.zIndex=999;
+    m.el.style.zIndex=Z_INDEX.selected;
     b.extend([m.lng,m.lat]);
 
     // -start- ★ ADD (allow popup only when Marker label is visible)
@@ -578,7 +734,7 @@ function applyFilter(){
 
     m.el.classList.toggle('gray', !visible);
     m.el.classList.toggle('force-blink', visible && blink);
-    m.el.style.zIndex = visible ? (zBase[m.status] ?? zBase._default) : 1;
+    m.el.style.zIndex = visible ? (zBase[m.status] ?? zBase._default) : Z_INDEX.hidden;
   });
 
   document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));

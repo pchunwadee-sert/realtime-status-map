@@ -39,7 +39,7 @@ body{margin:0;}
 .none{width:8.5px;height:8.5px;background:#F6F6F6;}
 
 /* ===== BLINK BORDER ===== */
-.force-blink.offline{border:1.5px solid #990000;box-shadow:0 0 6px rgba(255,0,0,.7);}
+.force-blink.offline{border:1.5px solid #CC0000;box-shadow:0 0 6px rgba(255,0,0,.7);}
 .force-blink.connecting{border:1.5px solid #CC7A00;box-shadow:0 0 6px rgba(255,153,0,.7);}
 .force-blink.telemetry{border:1.5px solid #B3B300;box-shadow:0 0 6px rgba(255,255,0,.7);}
 .force-blink.initializing{border:1.5px solid #009900;box-shadow:0 0 6px rgba(0,255,0,.7);}
@@ -123,14 +123,14 @@ body{margin:0;}
 .dot.force-blink{
   transform: scale(1.25);
 }
-.dot-offline{background:#FF0000;border:1px solid #990000;}
+.dot-offline{background:#FF0000;border:1px solid #CC0000;}
 .dot-connecting{background:#FF9900;border:1px solid #CC7A00;}
 .dot-telemetry{background:#FFFF00;border:1px solid #B3B300;}
 .dot-initializing{background:#00FF00;border:1px solid #009900;}
 .dot-online{background:#009900;border:1px solid #1B5E20;}
 .dot-none{background:#F6F6F6;border:1px solid #4D4D4D;}
 
-.force-blink.dot-offline{border:1.5px solid #990000;box-shadow:0 0 6px rgba(255,0,0,.9);}
+.force-blink.dot-offline{border:1.5px solid #CC0000;box-shadow:0 0 6px rgba(255,0,0,.9);}
 .force-blink.dot-connecting{border:1.5px solid #CC7A00;box-shadow:0 0 6px rgba(255,153,0,.9);}
 .force-blink.dot-telemetry{border:1.5px solid #B3B300;box-shadow:0 0 6px rgba(255,255,0,.9);}
 .force-blink.dot-initializing{border:1.5px solid #009900;box-shadow:0 0 6px rgba(0,255,0,.9);}
@@ -156,6 +156,31 @@ body{margin:0;}
 
 .reset-btn:hover{
   background:#1558b0;
+  box-shadow:0 2px 6px rgba(26,115,232,.4);
+}
+
+/* ===== SEARCH SIZE + STYLE (Override Reset) ===== */
+.search-large{
+  padding:6px 10px;      
+  border-radius:4px;     
+  font-weight: normal;   
+  border: none;          
+}
+
+/* ===== CLEAR SEARCH BUTTON ===== */
+#clearSearchBtn{
+  margin-left:auto;
+  padding:2px 8px;        
+  border:none;
+  border-radius:6px;
+  background:#1a73e8;
+  color:white;
+  cursor:pointer;
+  transition: all 0.2s ease;
+}
+
+#clearSearchBtn:hover{
+  background:#1558b0;     
   box-shadow:0 2px 6px rgba(26,115,232,.4);
 }
 
@@ -189,15 +214,31 @@ body{margin:0;}
   transition: all 0.2s ease;
 }
 
-/* ตอนเอาเมาส์วาง */
-#btnWRL:hover {
-  background: #f2f2f2;
+/* ========
+   สถานะ ON
+======== */
+#btnWRL:not(.off){
+  color: #9900FF;
 }
 
-/* สถานะ OFF */
+/* Hover ตอน ON → preview เป็น OFF */
+#btnWRL:not(.off):hover{
+  background: #e0e0e0;
+  color: #666;
+}
+
+/* ========
+   สถานะ OFF
+======== */
 #btnWRL.off {
   background: #e0e0e0;
   color: #666;
+}
+
+/* Hover ตอน OFF → preview เป็น ON */
+#btnWRL.off:hover{
+  background: white;
+  color: #9900FF;
 }
 /* ========================= */
 
@@ -225,9 +266,7 @@ body{margin:0;}
         <input id="searchInput" type="text"
           placeholder="🔍 Search anything..."
           style="width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;">
-        <button id="searchBtn"
-          style="padding:6px 10px;border:none;border-radius:4px;
-                 background:#1a73e8;color:white;cursor:pointer;">
+        <button id="searchBtn" class="reset-btn search-large">
           Search
         </button>
       </div>
@@ -242,15 +281,7 @@ body{margin:0;}
           <b><span id="searchCount">0</span></b> result(s)
         </span>
 
-        <button id="clearSearchBtn"
-          title="Clear Search"
-          style="margin-left:auto;
-                 padding:2px 8px;
-                 border:none;
-                 border-radius:6px;
-                 background:#1a73e8;
-                 color:white;
-                 cursor:pointer;">
+        <button id="clearSearchBtn" title="Clear Search">
           ✕
         </button>
       </div>
@@ -389,7 +420,7 @@ async function loadWRL(){
         el.classList.add("wrl-blink");                     // กระพริบเฉพาะ false
       } else {
         el.style.backgroundColor = "rgba(153,0,255,0.15)";   // true เดิม
-        el.style.border = "1.5px solid #9900FF";
+        el.style.border = "1.5px solid #9900ff";
         el.style.zIndex = Z_INDEX.wrl_true;
       }
 
@@ -748,5 +779,3 @@ function applyFilter(){
 </script>
 </body>
 </html>
-
-

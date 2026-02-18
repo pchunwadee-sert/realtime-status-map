@@ -390,6 +390,7 @@ const map=new mapboxgl.Map({
 const markers=[];
 const wrlMarkers=[];
 let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
+let lastUpdateStamp=null;  //ตัวแปรเก็บ Timestamp สำหรับทำ Advanced Delta Refresh
 
 const bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
@@ -415,13 +416,14 @@ async function loadWRL(){
       console.warn("WRL load failed");
       return;
     }
-    // 🧹 ป้องกัน marker ซ้อน
+
+    // ป้องกัน marker ซ้อน
     wrlMarkers.forEach(m=>m.remove());
     wrlMarkers.length=0;
 
     r.data.forEach(p=>{
 
-      // ✅ ตรวจ lat/lng แบบปลอดภัย
+      // ตรวจ lat/lng แบบปลอดภัย
       if(p.lat == null || p.lng == null) return;
 
       const el=document.createElement('div');
@@ -431,7 +433,7 @@ async function loadWRL(){
 
       const isFalse = String(p.status).toLowerCase() === "false";
 
-      // 🎯 สีพื้นของ WRL แยกชัดเจน ระหว่าง  false หรือ true
+      // สีพื้นของ WRL แยกชัดเจน ระหว่าง  false หรือ true
       if (isFalse) {
         el.style.backgroundColor = "rgba(255,0,0,0.55)";   // false เข้ม
         el.style.border = "1.5px solid #FF0000";
@@ -443,7 +445,7 @@ async function loadWRL(){
         el.style.zIndex = Z_INDEX.wrl_true;
       }
 
-      // ✅ สร้าง popup WRL
+      // สร้าง popup WRL
       const popup = new mapboxgl.Popup({
         offset: 10,
         closeButton: true
@@ -453,7 +455,7 @@ async function loadWRL(){
         </div>
       `);
 
-      // ✅ สร้าง marker + ผูก popup
+      // สร้าง marker + ผูก popup
       const marker = new mapboxgl.Marker(el)
         .setLngLat([Number(p.lng), Number(p.lat)])
         .setPopup(popup);
@@ -501,6 +503,10 @@ map.on('load',async()=>{
     document.getElementById("latestUpdateText").textContent =
       r.latestUpdateStatus;
   }
+
+     //เก็บค่า Timestamp ตอนโหลดครั้งแรก สำหรับทำ Advanced Delta Refresh
+  lastUpdateStamp = r.latestUpdateStatus ?? null; 
+
 
   if(!r || !r.success || !Array.isArray(r.data)){
     console.warn("MAIN load failed");
@@ -801,6 +807,218 @@ function applyFilter(){
 
   updateCounters();
 }
+
+
+//สร้างฟังก์ชันเพิ่ม Marker สำหรับทำ Advanced Delta Refresh
+function addMarkerFromData(p,status,device,ack){
+
+  if(!p.lat || !p.lng) return;
+
+  //แปลง status เป็น class
+  const cls={
+    Connecting:'connecting',
+    Offline:'offline',
+    "Telemetry Failure":'telemetry',
+    Initializing:'initializing',
+    Online:'online',
+    none:'none'
+  }[status];
+
+  //สร้าง DOM element (นี่คือวงกลมสีบนแผนที่)
+  const el=document.createElement('div');
+  el.className=`marker ${cls}`;
+
+  //สร้าง Marker บนแผนที่ (จุดที่เพิ่ม marker ลง map)
+  const marker=new mapboxgl.Marker(el)
+    .setLngLat([Number(p.lng), Number(p.lat)])
+    .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
+      <b>Site:</b> ${p.siteId}<br>
+      <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
+      <b>IP:</b> ${p.ipAddress ?? "-"}<br>
+      <b>XY:</b> ${p.lat}, ${p.lng}<br>
+      <b>Status:</b> ${status}<br>
+      <b>Device:</b> ${device}<br>
+      <b>Ack:</b> ${ack}<br><br>
+      <button onclick="window.open(
+        'https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}',
+        '_blank'
+      )"
+      style="padding:6px 10px;border:none;border-radius:4px;background:#1a73e8;color:white;cursor:pointer;">
+        🚗 Directions
+      </button>
+    `))
+    .addTo(map);
+
+  // popup protection เหมือน load แรก
+  el.addEventListener('click',e=>{
+    const m=markers.find(x=>x.el===el);
+    if(!m) return;
+
+    const allowPopup =
+      (!searchActive || m._passSearch) &&
+      (!filterActive || m._passFilter);
+
+    if(!allowPopup){
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
+
+  markers.push({
+    marker,
+    el,
+    status,
+    device,
+    acknowledge:ack,
+    siteId:p.siteId,
+    operationId:p.operationId,
+    ipAddress:p.ipAddress,
+    lat:p.lat,
+    lng:p.lng,
+    _passSearch:true,
+    _passFilter:true
+  });
+}
+
+
+//===== Advanced Delta Refresh Engine ==== 
+async function advancedDeltaRefresh(){
+
+  try{
+
+    const res = await fetch(API_URL);
+    const r = await res.json();
+
+    if(!r || !r.success || !Array.isArray(r.data)){
+      console.warn("Delta load failed");
+      return;
+    }
+
+     // เช็ค timestamp ก่อน
+    if(r.latestUpdateStatus === lastUpdateStamp){
+      console.log("No data change");
+      return;
+    }
+
+    console.log("Advanced delta update");
+
+    // อัปเดตเวลามุมล่างซ้าย
+    if(r.latestUpdateStatus){
+      document.getElementById("latestUpdateText").textContent =
+        r.latestUpdateStatus;
+    }
+
+    const newDataMap = new Map();
+    r.data.forEach(p => newDataMap.set(p.siteId, p));
+
+    const oldDataMap = new Map();
+    markers.forEach(m => oldDataMap.set(m.siteId, m));
+
+    // เพิ่มใหม่ / อัปเดต
+    newDataMap.forEach((p, siteId) => {
+
+      const old = oldDataMap.get(siteId);
+
+      const rawStatus=p.status??"";
+      const status=
+        NORMALIZE_STATUS.find(o=>o.regex.test(rawStatus))?.key
+        || "none";
+
+      const device=VALID_DEVICE.has(p.device)?p.device:"none";
+      const ack=VALID_ACK.has(p.acknowledge)?p.acknowledge:"none";
+
+      if(!old){
+        addMarkerFromData(p,status,device,ack);
+        return;
+      }
+
+      if(old.status!==status ||
+         old.device!==device ||
+         old.acknowledge!==ack){
+
+        old.status=status;
+        old.device=device;
+        old.acknowledge=ack;
+
+        const cls={
+          Connecting:'connecting',
+          Offline:'offline',
+          "Telemetry Failure":'telemetry',
+          Initializing:'initializing',
+          Online:'online',
+          none:'none'
+        }[status];
+
+        old.el.className=`marker ${cls}`;
+      }
+
+    });
+
+    // ลบ marker ที่หายไป
+    markers.slice().forEach(m => {
+      if (!newDataMap.has(m.siteId)) {
+        m.marker.remove();
+        const i=markers.indexOf(m);
+        if(i>-1) markers.splice(i,1);
+      }
+    });
+
+    applyFilter();
+
+    lastUpdateStamp=r.latestUpdateStatus??null;
+
+  }catch(e){
+    console.error("Advanced delta error:",e);
+  }
+}
+
+
+//===== ทำ Advanced Delta Refresh ให้ทำงานทุก 5 นาที หรือ กำหนดที่ค่าอื่นๆ =====
+//
+//setInterval(advancedDeltaRefresh, 5*60*1000);  //กรณีที่ 1 : Refresh ทุก 5 นาที เริ่มตอนเปิดเครื่อง
+//
+function startAlignedRefresh(intervalMin = 5, baseMinute = 3) {  //กรณีที่ 2 : Default Refresh ทุก ๆ 5 นาที แต่เริ่มที่นาทีที่ลงท้ายด้วย 3
+
+  function scheduleNext() {
+
+    const now = new Date();
+    const currentMin = now.getMinutes();
+
+    // คำนวณนาทีถัดไปที่ลงท้ายด้วย 2 หรือ 7
+    let nextMin = Math.ceil((currentMin - baseMinute) / intervalMin) * intervalMin + baseMinute;
+    let nextTime = new Date(now);
+
+    if (nextMin >= 60) {
+      nextTime.setHours(now.getHours() + 1);
+      nextTime.setMinutes(baseMinute);
+    } else {
+      nextTime.setMinutes(nextMin);
+    }
+
+    nextTime.setSeconds(0);
+    nextTime.setMilliseconds(0);
+
+    const delay = nextTime - now;
+
+    console.log("Next refresh at:", nextTime);
+
+    setTimeout(async () => {
+      try {
+        console.log("🔥 Triggered at:", new Date());
+        await advancedDeltaRefresh();
+      } catch (err) {
+        console.error("Refresh error:", err);
+      }
+      scheduleNext(); 
+    }, delay);
+  }
+
+  scheduleNext();
+}
+
+// เริ่มทำงาน
+startAlignedRefresh(5, 3);
+
 </script>
 </body>
 </html>

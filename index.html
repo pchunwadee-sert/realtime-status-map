@@ -9,7 +9,22 @@
 
 <style>
 body{margin:0;}
-#map{width:100vw;height:100vh;}
+
+#app{
+  width:100vw;
+  height:100vh;
+  position:relative;
+}
+
+#app:fullscreen{
+  background:#fff;
+}
+
+#map{
+  width:100%;
+  height:100%;
+  position:relative;
+}
 
 /* ===== MARKER BASE ===== */
 .marker{
@@ -188,11 +203,6 @@ body{margin:0;}
 /*    WRL Toggle Button      */
 /* ========================= */
 
-/* ทำให้ map เป็นตำแหน่งอ้างอิง */
-#map {
-  position: relative;
-}
-
 /* กล่องควบคุมปุ่ม */
 .map-control {
   position: absolute;   /* ลอย */
@@ -260,6 +270,8 @@ body{margin:0;}
 </head>
 
 <body>
+
+<div id="app">
 
 <!--  กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF -->  
 <div class="map-control">
@@ -387,12 +399,31 @@ const map=new mapboxgl.Map({
   zoom:6
 });
 
+//------------------------------------
+//       ทำให้ Full screen ได้
+//------------------------------------
+//สร้างปุ่ม Full screen
+map.addControl(
+  new mapboxgl.FullscreenControl({
+    container: document.getElementById('app')
+  }),
+  'bottom-right'
+);
+
+//กัน map เพื้ยนเวลา Full sceen
+document.addEventListener('fullscreenchange', () => {
+  map.resize();
+});
+//------------------------------------
+
 const markers=[];
-const wrlMarkers=[];
+const wrlMarkers = new Map();
+
 let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
 let lastUpdateStamp=null;  //ตัวแปรเก็บ Timestamp สำหรับทำ Advanced Delta Refresh
+let latestWRLData = [];  //เพิ่มตัวแปรเก็บ WRL ล่าสุด
 
-const bounds=new mapboxgl.LngLatBounds();
+let bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
 
 // ★ ADD
@@ -417,14 +448,19 @@ async function loadWRL(){
       return;
     }
 
+    //เก็บข้อมูล WRL ล่าสุดไว้
+    latestWRLData = r.data;
+
     // ป้องกัน marker ซ้อน
     wrlMarkers.forEach(m=>m.remove());
-    wrlMarkers.length=0;
+    wrlMarkers.clear();
 
     r.data.forEach(p=>{
 
       // ตรวจ lat/lng แบบปลอดภัย
-      if(p.lat == null || p.lng == null) return;
+	  const lat = Number(p.lat);
+      const lng = Number(p.lng);
+      if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
       const el=document.createElement('div');
       el.style.width="6.5px";
@@ -432,6 +468,7 @@ async function loadWRL(){
       el.style.borderRadius="50%";  //"50%" >> วงกลม
 
       const isFalse = String(p.status).toLowerCase() === "false";
+      el.dataset.status = String(!isFalse);
 
       // สีพื้นของ WRL แยกชัดเจน ระหว่าง  false หรือ true
       if (isFalse) {
@@ -456,15 +493,21 @@ async function loadWRL(){
       `);
 
       // สร้าง marker + ผูก popup
+      if(!p.site || !p.site.trim()){
+        return;
+      }
+      const key = p.site.trim();
+
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([Number(p.lng), Number(p.lat)])
+		.setLngLat([lng, lat])
         .setPopup(popup);
 
       if (wrlVisible) {
         marker.addTo(map);
       }
-	  
-      wrlMarkers.push(marker);
+
+      wrlMarkers.set(key, marker);
+
     });
 
     document.getElementById("btnWRL").style.display = "block";
@@ -474,6 +517,70 @@ async function loadWRL(){
   }
 }
 
+
+function syncWRLStatus(newData){
+
+  console.log("⚡ WRL SYNC >> START");
+
+  // สร้าง Map จากข้อมูลใหม่ (key = site)
+  const statusMap = new Map();
+
+  newData.forEach(p=>{
+    if(!p.site || !p.site.trim()){
+      return;
+    }
+    const normalized = String(p.status).toLowerCase() === "true";
+    statusMap.set(p.site.trim(), normalized);  
+  });
+
+  // วน marker ทั้งหมดที่เราเก็บไว้
+  let updateCount=0;
+  
+  wrlMarkers.forEach((marker, key)=>{
+
+    const newStatus = statusMap.get(key);
+
+    if(newStatus === undefined){
+      return;
+    }
+
+    const el = marker.getElement();
+    const oldStatus = el.dataset.status;
+
+    // ถ้า status เหมือนเดิม ไม่ต้อง update
+    if(oldStatus === String(newStatus)){
+      return;
+    }	
+	
+	el.dataset.status = String(newStatus);
+    el.classList.remove("wrl-blink");
+
+    if(newStatus === false){
+
+      //🔴 false = แดง + กระพริบ
+      el.style.backgroundColor = "rgba(255,0,0,0.55)";
+      el.style.border = "1.5px solid #FF0000";
+      el.style.zIndex = Z_INDEX.wrl_false;
+
+      el.classList.add("wrl-blink");
+
+    }else{
+
+      // 🟣 true = ม่วงอ่อน
+      el.style.backgroundColor = "rgba(153,0,255,0.15)";
+      el.style.border = "1.5px solid #9900ff";
+      el.style.zIndex = Z_INDEX.wrl_true;
+    }
+	
+	console.log(`${updateCount + 1}. 🔁 ${key} : ${oldStatus} ➜ ${newStatus}`);	
+	updateCount++
+	
+  });
+
+  console.log("✅ WRL SYNC >> COMPLETE");
+}
+
+
 function toggleWRL(){
   wrlVisible = !wrlVisible;
   const btn = document.getElementById("btnWRL");
@@ -481,6 +588,12 @@ function toggleWRL(){
   if(wrlVisible){
     // แสดง marker ทั้งหมด
     wrlMarkers.forEach(m => m.addTo(map));
+
+    //sync เมื่อตอนขณะเปิด WRL
+    if(latestWRLData.length){
+      syncWRLStatus(latestWRLData);
+    }
+
     btn.innerText = "WRL : ON";
     btn.classList.remove("off");
 
@@ -504,7 +617,7 @@ map.on('load',async()=>{
       r.latestUpdateStatus;
   }
 
-     //เก็บค่า Timestamp ตอนโหลดครั้งแรก สำหรับทำ Advanced Delta Refresh
+  // เก็บค่า Timestamp ตอนโหลดครั้งแรก สำหรับทำ Advanced Delta Refresh
   lastUpdateStamp = r.latestUpdateStatus ?? null; 
 
 
@@ -514,7 +627,10 @@ map.on('load',async()=>{
   }
   
   r.data.forEach(p=>{
-    if(!p.lat||!p.lng) return;
+
+    const lat = Number(p.lat);
+    const lng = Number(p.lng);
+    if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
 	// ----- เริ่ม: แบบเดิม -----
     //const status=VALID_STATUS.has(p.status)?p.status:"none";
@@ -537,7 +653,7 @@ map.on('load',async()=>{
     el.className=`marker ${cls}`;
 
     const marker=new mapboxgl.Marker(el)
-      .setLngLat([Number(p.lng), Number(p.lat)])
+      .setLngLat([lng, lat])
       .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
@@ -571,8 +687,11 @@ map.on('load',async()=>{
         }
       });
       // -end- 
+	  
+	const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
 
     markers.push({
+	  key,
       marker,
       el,
       status,
@@ -581,8 +700,8 @@ map.on('load',async()=>{
       siteId:p.siteId,
       operationId:p.operationId,
 	  ipAddress:p.ipAddress,  
-      lat:p.lat,
-      lng:p.lng,
+      lat:lat,
+      lng:lng,
 
       // -start- ★ ADD : search / filter flags (allow popup only when Marker label is visible)
       _passSearch:true,
@@ -591,7 +710,7 @@ map.on('load',async()=>{
 
     });
 
-    bounds.extend([Number(p.lng), Number(p.lat)]);
+	bounds.extend([lng, lat]);
   });
 
   map.fitBounds(bounds,{padding:60});
@@ -670,12 +789,14 @@ function runSearch(){
   const searched=markers.filter(m=>objectToSearchString(m).includes(q));
   if(searched.length===0){
     alert("ไม่พบข้อมูลที่ค้นหา");
+    searchActive=false;   //reset state
     return;
   }
 
   const matched=searched.filter(m=>byStatus(m)&&byDevice(m)&&byAck(m));
   if(matched.length===0){
     alert("พบข้อมูลจาก Search แต่ไม่ตรงกับ Status / Device / Ack");
+    searchActive=false;   //reset state
     return;
   }
 
@@ -774,6 +895,7 @@ document.querySelectorAll('[data-ack]').forEach(r=>{
 function applyFilter(){
 
   const base = searchResultSet ?? markers;
+  const baseSet = new Set(base);
 
   // -start- ★ ADD : filter active state (allow popup only when Marker label is visible)
   filterActive =
@@ -783,7 +905,7 @@ function applyFilter(){
   // -end-
 
   markers.forEach(m=>{
-    const inBase = base.includes(m);
+	const inBase = baseSet.has(m);
     const visible = inBase && byStatus(m) && byDevice(m) && byAck(m);
 
     // -start- ★ ADD (allow popup only when Marker label is visible)
@@ -812,7 +934,9 @@ function applyFilter(){
 //สร้างฟังก์ชันเพิ่ม Marker สำหรับทำ Advanced Delta Refresh
 function addMarkerFromData(p,status,device,ack){
 
-  if(!p.lat || !p.lng) return;
+  const lat = Number(p.lat);
+  const lng = Number(p.lng); 
+  if(!Number.isFinite(lat) || !Number.isFinite(lng))  return;
 
   //แปลง status เป็น class
   const cls={
@@ -830,7 +954,7 @@ function addMarkerFromData(p,status,device,ack){
 
   //สร้าง Marker บนแผนที่ (จุดที่เพิ่ม marker ลง map)
   const marker=new mapboxgl.Marker(el)
-    .setLngLat([Number(p.lng), Number(p.lat)])
+    .setLngLat([lng, lat])
     .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
       <b>Site:</b> ${p.siteId}<br>
       <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
@@ -863,8 +987,11 @@ function addMarkerFromData(p,status,device,ack){
       e.preventDefault();
     }
   });
+  
+  const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
 
   markers.push({
+    key,
     marker,
     el,
     status,
@@ -873,8 +1000,8 @@ function addMarkerFromData(p,status,device,ack){
     siteId:p.siteId,
     operationId:p.operationId,
     ipAddress:p.ipAddress,
-    lat:p.lat,
-    lng:p.lng,
+    lat:lat,
+    lng:lng,
     _passSearch:true,
     _passFilter:true
   });
@@ -900,24 +1027,35 @@ async function advancedDeltaRefresh(){
       return;
     }
 
-    console.log("Advanced delta update");
+    console.log("🔄 DAU/ROUTER DELTA REFRESH >> START");
 
-    // อัปเดตเวลามุมล่างซ้าย
+     // อัปเดตเวลามุมล่างซ้าย
     if(r.latestUpdateStatus){
       document.getElementById("latestUpdateText").textContent =
         r.latestUpdateStatus;
     }
-
+	
+     // สร้าง newDataMap
     const newDataMap = new Map();
-    r.data.forEach(p => newDataMap.set(p.siteId, p));
-
+	
+    r.data.forEach(p => {
+	  const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
+      newDataMap.set(key, p);
+    });
+	
+     // สร้าง oldDataMap
     const oldDataMap = new Map();
-    markers.forEach(m => oldDataMap.set(m.siteId, m));
+	
+    markers.forEach(m => {
+      oldDataMap.set(m.key, m);
+    });
+
+    let updateCount=0;
 
     // เพิ่มใหม่ / อัปเดต
-    newDataMap.forEach((p, siteId) => {
+    newDataMap.forEach((p, key) => {
 
-      const old = oldDataMap.get(siteId);
+      const old = oldDataMap.get(key);
 
       const rawStatus=p.status??"";
       const status=
@@ -926,16 +1064,35 @@ async function advancedDeltaRefresh(){
 
       const device=VALID_DEVICE.has(p.device)?p.device:"none";
       const ack=VALID_ACK.has(p.acknowledge)?p.acknowledge:"none";
-
+	  
+      const lat = Number(p.lat);
+      const lng = Number(p.lng);
+	  
+      if(!Number.isFinite(lat) || !Number.isFinite(lng)){
+	    console.warn("Invalid lat/lng skipped:", key);
+        return;
+      }
+	  
+      // ----- เพิ่มใหม่ -----
       if(!old){
         addMarkerFromData(p,status,device,ack);
         return;
       }
-
+	  
+      // ----- อัปเดตตำแหน่ง -----
+      if(old.lat !== lat || old.lng !== lng){
+        old.lat = lat;
+        old.lng = lng;
+        old.marker.setLngLat([lng, lat]);
+      } 
+	  
+      // ----- อัปเดตสถานะ -----
       if(old.status!==status ||
          old.device!==device ||
          old.acknowledge!==ack){
-
+		
+		console.log(`${updateCount + 1}. 🔁 ${key} : ${old.status} ➜ ${status}`);
+				 
         old.status=status;
         old.device=device;
         old.acknowledge=ack;
@@ -949,14 +1106,25 @@ async function advancedDeltaRefresh(){
           none:'none'
         }[status];
 
-        old.el.className=`marker ${cls}`;
+		old.el.classList.remove(
+          "connecting",
+          "offline",
+          "telemetry",
+          "initializing",
+          "online",
+          "none"
+        );
+
+        old.el.classList.add(cls);
+		updateCount++;
       }
 
     });
 
     // ลบ marker ที่หายไป
     markers.slice().forEach(m => {
-      if (!newDataMap.has(m.siteId)) {
+	  	  
+      if (!newDataMap.has(m.key)) {	  
         m.marker.remove();
         const i=markers.indexOf(m);
         if(i>-1) markers.splice(i,1);
@@ -964,6 +1132,42 @@ async function advancedDeltaRefresh(){
     });
 
     applyFilter();
+
+    // ===== REBUILD BOUNDS AFTER DELTA =====
+    bounds = new mapboxgl.LngLatBounds();
+    markers.forEach(m=>{
+      bounds.extend([m.lng, m.lat]);
+    });
+	
+    console.log("✅ DAU/ROUTER DELTA REFRESH >> COMPLETE");
+	
+	
+    //-------------------------------
+    //       WRL DELTA REFRESH 
+	//-------------------------------
+    try{
+
+	  console.log("🔄 WRL DELTA REFRESH >> START");
+
+      const wrlRes = await fetch(API_WRL + "&t=" + Date.now());
+      const wrlJson = await wrlRes.json();
+
+      if(wrlJson.success && Array.isArray(wrlJson.data)){
+
+        // เก็บข้อมูลล่าสุดไว้เสมอ
+        latestWRLData = wrlJson.data;
+
+        // ถ้า WRL เปิดอยู่ ให้ sync ทันที
+        if(wrlVisible){
+          syncWRLStatus(latestWRLData);
+        }
+		
+      }	  
+	  console.log("✅ WRL DELTA REFRESH >> COMPLETE");
+
+    }catch(err){
+      console.warn("WRL delta refresh error:", err);
+    }
 
     lastUpdateStamp=r.latestUpdateStatus??null;
 
@@ -974,18 +1178,21 @@ async function advancedDeltaRefresh(){
 
 
 //===== ทำ Advanced Delta Refresh ให้ทำงานทุก 5 นาที หรือ กำหนดที่ค่าอื่นๆ =====
-//
-//setInterval(advancedDeltaRefresh, 5*60*1000);  //กรณีที่ 1 : Refresh ทุก 5 นาที เริ่มตอนเปิดเครื่อง
-//
-function startAlignedRefresh(intervalMin = 5, baseMinute = 3) {  //กรณีที่ 2 : Default Refresh ทุก ๆ 5 นาที แต่เริ่มที่นาทีที่ลงท้ายด้วย 3
-
+//-------------------------------------------
+//กรณีที่ 1 : Refresh ทุก 5 นาที เริ่มตอนเปิดเครื่อง
+//setInterval(advancedDeltaRefresh, 5*60*1000); 
+//-------------------------------------------
+//กรณีที่ 2 : Default Refresh ทุก ๆ 5 นาที แต่เริ่มที่นาทีที่ลงท้ายด้วย 2 นาที 30 วินาที
+function startAlignedRefresh(intervalMin = 5, baseMinute = 2, baseSecond = 30) {  
   function scheduleNext() {
 
     const now = new Date();
     const currentMin = now.getMinutes();
 
-    // คำนวณนาทีถัดไปที่ลงท้ายด้วย 2 หรือ 7
-    let nextMin = Math.ceil((currentMin - baseMinute) / intervalMin) * intervalMin + baseMinute;
+    // คำนวณนาทีถัดไปที่ลงท้ายด้วย 2.30 หรือ 7.30
+    let nextMin = Math.ceil((currentMin - baseMinute) / intervalMin) 
+	              * intervalMin + baseMinute;
+				  
     let nextTime = new Date(now);
 
     if (nextMin >= 60) {
@@ -995,11 +1202,15 @@ function startAlignedRefresh(intervalMin = 5, baseMinute = 3) {  //กรณี�
       nextTime.setMinutes(nextMin);
     }
 
-    nextTime.setSeconds(0);
+    nextTime.setSeconds(baseSecond);
     nextTime.setMilliseconds(0);
+	
+    // กันเวลาย้อนหลัง
+    if (nextTime <= now) {
+      nextTime.setMinutes(nextTime.getMinutes() + intervalMin);
+    }	
 
-    const delay = nextTime - now;
-
+    const delay = nextTime - new Date();
     console.log("Next refresh at:", nextTime);
 
     setTimeout(async () => {
@@ -1015,10 +1226,13 @@ function startAlignedRefresh(intervalMin = 5, baseMinute = 3) {  //กรณี�
 
   scheduleNext();
 }
-
 // เริ่มทำงาน
-startAlignedRefresh(5, 3);
+startAlignedRefresh(5, 2, 30);
+//-------------------------------------------
 
 </script>
+
+</div>
+
 </body>
 </html>

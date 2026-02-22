@@ -12,7 +12,7 @@ body{margin:0;}
 
 #app{
   width:100vw;
-  height:100vh;
+  height:100dvh;
   position:relative;
 }
 
@@ -29,8 +29,21 @@ body{margin:0;}
 /* ===== MARKER BASE ===== */
 .marker{
   border-radius:50%;
-  transition:opacity .2s, box-shadow .2s, border .2s;
+  transition:opacity .2s, box-shadow .2s, border .2s, transform .15s ease;
   box-sizing:border-box;
+  cursor: default;   /* ค่าเริ่มต้น = กดไม่ได้ */
+}
+
+.marker:not(.gray){
+  cursor:pointer;   /* เปลี่ยนเป็นรูปมือเฉพาะตัวที่กดได้ */
+}
+
+.marker:not(.gray):hover{
+  transform:scale(1.15);  /* ขยายเล็กน้อยเวลา hover */
+}
+
+.wrl-marker{
+  cursor:pointer;  /* เปลี่ยนเป็นรูปมือเฉพาะตัวที่กดได้  ของ WRL*/
 }
 
 /* ===== FILTERED ===== */
@@ -294,7 +307,7 @@ body{margin:0;}
 
     <div class="panel-box">
       <div class="panel" style="display:flex;gap:6px;">
-        <input id="searchInput" type="text"
+        <input id="searchInput" type="search"
           placeholder="🔍 Search anything..."
           style="width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;">
         <button id="searchBtn" class="reset-btn search-large">
@@ -410,9 +423,16 @@ map.addControl(
   'bottom-right'
 );
 
-//กัน map เพื้ยนเวลา Full sceen
+//กัน map เพื้ยนเวลา กดปุ่ม Fullscreen / ออกจาก Fullscreen
 document.addEventListener('fullscreenchange', () => {
   map.resize();
+});
+
+//แก้ปัญหาเกี่ยวกับการหมุนจอใน iPad, iPhone, Android tablet 
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    map.resize();
+  }, 300);  
 });
 //------------------------------------
 
@@ -462,20 +482,21 @@ async function loadWRL(){
       const lng = Number(p.lng);
       if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-      const el=document.createElement('div');
-      el.style.width="6.5px";
-      el.style.height="6.5px";
-      el.style.borderRadius="50%";  //"50%" >> วงกลม
+      const el = document.createElement('div');
+      el.className = "wrl-marker";
+      el.style.width = "6.5px";
+      el.style.height = "6.5px";
+      el.style.borderRadius = "50%";  //"50%" >> วงกลม
 
       const isFalse = String(p.status).toLowerCase() === "false";
       el.dataset.status = String(!isFalse);
 
       // สีพื้นของ WRL แยกชัดเจน ระหว่าง  false หรือ true
       if (isFalse) {
-        el.style.backgroundColor = "rgba(255,0,0,0.55)";   // false เข้ม
-        el.style.border = "1.5px solid #FF0000";
+        el.style.backgroundColor = "rgba(153,0,255,0.45)";   // false เข้ม
+        el.style.border = "2.0px solid #ff0000";
         el.style.zIndex = Z_INDEX.wrl_false;
-        el.classList.add("wrl-blink");                     // กระพริบเฉพาะ false
+        el.classList.add("wrl-blink");                       // กระพริบเฉพาะ false
       } else {
         el.style.backgroundColor = "rgba(153,0,255,0.15)";   // true เดิม
         el.style.border = "1.5px solid #9900ff";
@@ -552,14 +573,14 @@ function syncWRLStatus(newData){
       return;
     }	
 	
-	el.dataset.status = String(newStatus);
+    el.dataset.status = String(newStatus);
     el.classList.remove("wrl-blink");
 
     if(newStatus === false){
 
       //🔴 false = แดง + กระพริบ
-      el.style.backgroundColor = "rgba(255,0,0,0.55)";
-      el.style.border = "1.5px solid #FF0000";
+      el.style.backgroundColor = "rgba(153,0,255,0.45)"
+      el.style.border = "2.0px solid #ff0000";
       el.style.zIndex = Z_INDEX.wrl_false;
 
       el.classList.add("wrl-blink");
@@ -795,7 +816,7 @@ function runSearch(){
 
   const matched=searched.filter(m=>byStatus(m)&&byDevice(m)&&byAck(m));
   if(matched.length===0){
-    alert("พบข้อมูลจาก Search แต่ไม่ตรงกับ Status / Device / Ack");
+    alert("พบข้อมูลจาก Search แต่ไม่มีใน Filter ของ Status / Device / Ack.");
     searchActive=false;   //reset state
     return;
   }

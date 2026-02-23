@@ -698,7 +698,7 @@ map.on('load',async()=>{
       .addTo(map);
 
       // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
-      el.addEventListener('click',e=>{
+      el.addEventListener('pointerup',e=>{
         const m=markers.find(x=>x.el===el);
         if(!m) return;
 
@@ -999,7 +999,7 @@ function addMarkerFromData(p,status,device,ack){
     .addTo(map);
 
   // popup protection เหมือน load แรก
-  el.addEventListener('click',e=>{
+  el.addEventListener('pointerup',e=>{
     const m=markers.find(x=>x.el===el);
     if(!m) return;
 
@@ -1261,3 +1261,4 @@ startAlignedRefresh(5, 2, 30);
 
 </body>
 </html>
+

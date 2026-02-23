@@ -26,24 +26,28 @@ body{margin:0;}
   position:relative;
 }
 
+
 /* ===== MARKER BASE ===== */
+/* ----- Status ----- */
 .marker{
   border-radius:50%;
-  transition:opacity .2s, box-shadow .2s, border .2s, transform .15s ease;
+  transition:opacity .2s, box-shadow .2s, border .2s;
   box-sizing:border-box;
   cursor: default;   /* ค่าเริ่มต้น = กดไม่ได้ */
 }
-
 .marker:not(.gray){
   cursor:pointer;   /* เปลี่ยนเป็นรูปมือเฉพาะตัวที่กดได้ */
 }
-
 .marker:not(.gray):hover{
-  transform:scale(1.15);  /* ขยายเล็กน้อยเวลา hover */
+  background:black !important;  /* พื้นเป็นสีดำ เวลา hover */ 
 }
 
+/* ----- WRL ----- */
 .wrl-marker{
-  cursor:pointer;  /* เปลี่ยนเป็นรูปมือเฉพาะตัวที่กดได้  ของ WRL*/
+  cursor:pointer;  /* เปลี่ยนเป็นรูปมือเฉพาะตัวที่กดได้ ของ WRL*/
+}
+.wrl-marker:hover{
+  background:black !important;  /* พื้นเป็นสีดำ เวลา hover */ 
 }
 
 /* ===== FILTERED ===== */

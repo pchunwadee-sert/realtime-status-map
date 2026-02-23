@@ -384,7 +384,7 @@ body{margin:0;}
 </div>
 
 <script>
-mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21remZqZDdrMDEwbzNlc2E2b3htZWM2dyJ9.4BEW_l9sQlPzkMt5SyyNiQ';	
+mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21remZqZDdrMDEwbzNlc2E2b3htZWM2dyJ9.4BEW_l9sQlPzkMt5SyyNiQ';
 //const API_URL='https://script.google.com/macros/s/AKfycbyir64PbHBtTUzileqK0TXE9eu3ib5olFfAT32p24tAnwVjCb9NThC0gBXMFYZ2yn6Y/exec';
 
 // --- ล็อก API ---
@@ -524,7 +524,7 @@ async function loadWRL(){
       const key = p.site.trim();
 
       const marker = new mapboxgl.Marker(el)
-	.setLngLat([lng, lat])
+		.setLngLat([lng, lat])
         .setPopup(popup);
 
       if (wrlVisible) {
@@ -698,7 +698,7 @@ map.on('load',async()=>{
       .addTo(map);
 
       // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
-      el.addEventListener('pointerup',e=>{
+      el.addEventListener('click',e=>{
         const m=markers.find(x=>x.el===el);
         if(!m) return;
 
@@ -709,11 +709,7 @@ map.on('load',async()=>{
         if(!allowPopup){
           e.stopPropagation();
           e.preventDefault();
-          return;
         }
-
-        // 🔥 บังคับเปิด popup
-        m.marker.togglePopup();
       });
       // -end- 
 	  
@@ -1003,7 +999,7 @@ function addMarkerFromData(p,status,device,ack){
     .addTo(map);
 
   // popup protection เหมือน load แรก
-  el.addEventListener('pointerup',e=>{
+  el.addEventListener('click',e=>{
     const m=markers.find(x=>x.el===el);
     if(!m) return;
 
@@ -1014,11 +1010,7 @@ function addMarkerFromData(p,status,device,ack){
     if(!allowPopup){
       e.stopPropagation();
       e.preventDefault();
-      return;
     }
-
-    // 🔥 บังคับเปิด popup
-    m.marker.togglePopup();
   });
   
   const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;

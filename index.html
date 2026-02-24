@@ -786,8 +786,8 @@ map.on('load',async()=>{
   document.getElementById("btnWRL").addEventListener("click", toggleWRL);
 
 
-  /* ===== CLICK พื้นที่ว่างให้ปิด popup ===== */
-  map.on('click', (e) => {
+  /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
+  map.on('pointerdown', (e) => {
 
     // ถ้ากดบน marker ไม่ต้องปิด
     if(e.originalEvent.target.closest('.marker')) return;

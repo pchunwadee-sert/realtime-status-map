@@ -793,7 +793,7 @@ map.on('load',async()=>{
 
 
   /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
-  map.getCanvas().addEventListener('click', (e) => {
+  map.getCanvas().addEventListener('pointerup', (e) => {
 
     const target = e.target;
 
@@ -1363,3 +1363,4 @@ startAlignedRefresh(5, 2, 30);
 
 </body>
 </html>
+

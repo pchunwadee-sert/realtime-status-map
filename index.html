@@ -445,6 +445,8 @@ const wrlMarkers = new Map();
 
 let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
 let lastUpdateStamp=null;  //ตัวแปรเก็บ Timestamp สำหรับทำ Advanced Delta Refresh
+let retried = false;  //ตัวแปรตรวจสอบว่า timestamp ได้มีการ retry Refresh ไปแล้วหรือยัง
+
 let latestWRLData = [];  //เพิ่มตัวแปรเก็บ WRL ล่าสุด
 let currentPopup = null;  //ตัวแปร global ควบคุม popup
 
@@ -655,7 +657,7 @@ map.on('load',async()=>{
 
   // เก็บค่า Timestamp ตอนโหลดครั้งแรก สำหรับทำ Advanced Delta Refresh
   lastUpdateStamp = r.latestUpdateStatus ?? null; 
-
+  retried = false;  //กำหนดค่าเริ่มต้น  ยังไม่เคย retry
 
   if(!r || !r.success || !Array.isArray(r.data)){
     console.warn("MAIN load failed");
@@ -693,8 +695,8 @@ map.on('load',async()=>{
       .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
-		<b>IP:</b> ${p.ipAddress ?? "-"}<br> 
-		<b>XY:</b> ${p.lat}, ${p.lng}<br>  
+	<b>IP:</b> ${p.ipAddress ?? "-"}<br> 
+	<b>XY:</b> ${p.lat}, ${p.lng}<br>  
         <b>Status:</b> ${status}<br>
         <b>Device:</b> ${device}<br>
         <b>Ack:</b> ${ack}<br><br>
@@ -1167,8 +1169,19 @@ async function advancedDeltaRefresh(){
     }
 
      // เช็ค timestamp ก่อน
-    if(r.latestUpdateStatus === lastUpdateStamp){
+    if (r.latestUpdateStatus === lastUpdateStamp) {
+
       console.log("No data change");
+
+      if (!retried) {
+        retried = true;   //retry ไปแล้ว 1 ครั้งในรอบนี้ ห้าม retry ซ้ำอีก
+
+        console.log("🔥 Retry triggered again.");
+
+        setTimeout(() => {
+          advancedDeltaRefresh();
+        }, 15000);
+      }
       return;
     }
 
@@ -1184,7 +1197,7 @@ async function advancedDeltaRefresh(){
     const newDataMap = new Map();
 	
     r.data.forEach(p => {
-	  const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
+      const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
       newDataMap.set(key, p);
     });
 	
@@ -1214,7 +1227,7 @@ async function advancedDeltaRefresh(){
       const lng = Number(p.lng);
 	  
       if(!Number.isFinite(lat) || !Number.isFinite(lng)){
-	    console.warn("Invalid lat/lng skipped:", key);
+	console.warn("Invalid lat/lng skipped:", key);
         return;
       }
 	  
@@ -1236,7 +1249,7 @@ async function advancedDeltaRefresh(){
          old.device!==device ||
          old.acknowledge!==ack){
 		
-		console.log(`${updateCount + 1}. 🔁 ${key} : ${old.status} ➜ ${status}`);
+	console.log(`${updateCount + 1}. 🔁 ${key} : ${old.status} ➜ ${status}`);
 				 
         old.status=status;
         old.device=device;
@@ -1251,7 +1264,7 @@ async function advancedDeltaRefresh(){
           none:'none'
         }[status];
 
-		old.el.classList.remove(
+	  old.el.classList.remove(
           "connecting",
           "offline",
           "telemetry",
@@ -1261,7 +1274,7 @@ async function advancedDeltaRefresh(){
         );
 
         old.el.classList.add(cls);
-		updateCount++;
+	updateCount++;
       }
 
     });
@@ -1289,10 +1302,10 @@ async function advancedDeltaRefresh(){
 	
     //-------------------------------
     //       WRL DELTA REFRESH 
-	//-------------------------------
+    //-------------------------------
     try{
 
-	  console.log("🔄 WRL DELTA REFRESH >> START");
+      console.log("🔄 WRL DELTA REFRESH >> START");
 
       const wrlRes = await fetch(API_WRL + "&t=" + Date.now());
       const wrlJson = await wrlRes.json();
@@ -1308,13 +1321,14 @@ async function advancedDeltaRefresh(){
         }
 		
       }	  
-	  console.log("✅ WRL DELTA REFRESH >> COMPLETE");
+      console.log("✅ WRL DELTA REFRESH >> COMPLETE");
 
     }catch(err){
       console.warn("WRL delta refresh error:", err);
     }
 
-    lastUpdateStamp=r.latestUpdateStatus??null;
+    lastUpdateStamp = r.latestUpdateStatus??null;
+    retried = false;  //reset retry สำหรับ timestamp รอบใหม่ (มีข้อมูลใหม่แล้ว)
 
   }catch(e){
     console.error("Advanced delta error:",e);
@@ -1327,14 +1341,14 @@ async function advancedDeltaRefresh(){
 //กรณีที่ 1 : Refresh ทุก 5 นาที เริ่มตอนเปิดเครื่อง
 //setInterval(advancedDeltaRefresh, 5*60*1000); 
 //-------------------------------------------
-//กรณีที่ 2 : Default Refresh ทุก ๆ 5 นาที แต่เริ่มที่นาทีที่ลงท้ายด้วย 2 นาที 30 วินาที
-function startAlignedRefresh(intervalMin = 5, baseMinute = 2, baseSecond = 30) {  
+//กรณีที่ 2 : Default Refresh ทุก ๆ 5 นาที แต่เริ่มที่นาทีที่ลงท้ายด้วย 2 นาที 15 วินาที
+function startAlignedRefresh(intervalMin = 5, baseMinute = 2, baseSecond = 15) {  
   function scheduleNext() {
 
     const now = new Date();
     const currentMin = now.getMinutes();
 
-    // คำนวณนาทีถัดไปที่ลงท้ายด้วย 2.30 หรือ 7.30
+    // คำนวณนาทีถัดไปที่ลงท้ายด้วย 2.15 หรือ 7.15
     let nextMin = Math.ceil((currentMin - baseMinute) / intervalMin) 
 	              * intervalMin + baseMinute;
 				  
@@ -1372,7 +1386,7 @@ function startAlignedRefresh(intervalMin = 5, baseMinute = 2, baseSecond = 30) {
   scheduleNext();
 }
 // เริ่มทำงาน
-startAlignedRefresh(5, 2, 30);
+startAlignedRefresh(5, 2, 15);
 //-------------------------------------------
 
 </script>

@@ -942,11 +942,18 @@ document.querySelectorAll('[data-status]').forEach(r=>{
   r.onclick=()=>{
     const s=r.dataset.status;
     if(s==="TOTAL"){
+      // 🔴 ปิด popup ที่เปิดอยู่
+      if(currentPopup){
+        currentPopup.remove();
+        currentPopup = null;
+      }
+
       activeStatuses.clear();
       activeDevice=null;
       activeAck=null;
       document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
       clearSearch();
+
       if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60});
       return;
     }

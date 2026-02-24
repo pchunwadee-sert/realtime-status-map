@@ -446,6 +446,7 @@ const wrlMarkers = new Map();
 let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
 let lastUpdateStamp=null;  //ตัวแปรเก็บ Timestamp สำหรับทำ Advanced Delta Refresh
 let latestWRLData = [];  //เพิ่มตัวแปรเก็บ WRL ล่าสุด
+let currentPopup = null;  //ตัวแปร global ควบคุม popup
 
 let bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
@@ -733,15 +734,23 @@ map.on('load',async()=>{
           return;
         }
 
-        // Open popup
-        m.marker.togglePopup();
+        // ----- CONTROLLED POPUP -----
+        // ถ้ามี popup เดิม → ปิดก่อน
+        if(currentPopup){
+          currentPopup.remove();
+          currentPopup = null;
+        }
+        // เปิด popup ของ marker นี้
+        const popup = m.marker.getPopup();
+        popup.addTo(map);
+        currentPopup = popup;
 
       });
 	  
     const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
 
     markers.push({
-	  key,
+      key,
       marker,
       el,
       status,
@@ -760,7 +769,7 @@ map.on('load',async()=>{
 
     });
 
-	bounds.extend([lng, lat]);
+    bounds.extend([lng, lat]);
   });
 
   map.fitBounds(bounds,{padding:60});
@@ -775,8 +784,23 @@ map.on('load',async()=>{
   await loadWRL();
   
   document.getElementById("btnWRL").addEventListener("click", toggleWRL);
+
+
+  /* ===== CLICK พื้นที่ว่างให้ปิด popup ===== */
+  map.on('click', (e) => {
+
+    // ถ้ากดบน marker ไม่ต้องปิด
+    if(e.originalEvent.target.closest('.marker')) return;
+
+    if(currentPopup){
+      currentPopup.remove();
+      currentPopup = null;
+    }
+  });
   
 });
+
+
 
 /* ===== FILTER ===== */
 function byStatus(m){return activeStatuses.size===0||activeStatuses.has(m.status);}
@@ -1057,8 +1081,16 @@ function addMarkerFromData(p,status,device,ack){
       return;
     }
 
-    // Open popup
-    m.marker.togglePopup();
+    // ----- CONTROLLED POPUP -----
+    // ถ้ามี popup เดิม → ปิดก่อน
+    if(currentPopup){
+      currentPopup.remove();
+      currentPopup = null;
+    }
+    // เปิด popup ของ marker นี้
+    const popup = m.marker.getPopup();
+    popup.addTo(map);
+    currentPopup = popup;
 
   });
   

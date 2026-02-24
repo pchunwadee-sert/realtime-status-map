@@ -384,7 +384,7 @@ body{margin:0;}
 </div>
 
 <script>
-mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21remZqZDdrMDEwbzNlc2E2b3htZWM2dyJ9.4BEW_l9sQlPzkMt5SyyNiQ';
+mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21rczRzanpqMTVrNDNlcHA3cndudHY2NCJ9.tE7h5N64QMt2FczrH06uCA';
 //const API_URL='https://script.google.com/macros/s/AKfycbyir64PbHBtTUzileqK0TXE9eu3ib5olFfAT32p24tAnwVjCb9NThC0gBXMFYZ2yn6Y/exec';
 
 // --- ล็อก API ---
@@ -793,9 +793,9 @@ map.on('load',async()=>{
 
 
   /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
-  map.getCanvas().addEventListener('pointerup', (e) => {
+  map.on('click', (e) => {
 
-    const target = e.target;
+    const target = e.originalEvent.target;
 
     // ถ้ากดบน marker หรือ popup ไม่ต้องปิด
     if(
@@ -1363,4 +1363,3 @@ startAlignedRefresh(5, 2, 30);
 
 </body>
 </html>
-

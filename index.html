@@ -789,8 +789,13 @@ map.on('load',async()=>{
   /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
   map.getCanvas().addEventListener('pointerdown', (e) => {
 
-    // ถ้ากดบน marker ไม่ต้องปิด
-    if(e.originalEvent.target.closest('.marker')) return;
+    const target = e.target;
+
+    // ถ้ากดบน marker หรือ popup ไม่ต้องปิด
+    if(
+      target.closest('.marker') ||
+      target.closest('.mapboxgl-popup')
+    ) return;
 
     if(currentPopup){
       currentPopup.remove();
@@ -799,7 +804,6 @@ map.on('load',async()=>{
   });
   
 });
-
 
 
 /* ===== FILTER ===== */

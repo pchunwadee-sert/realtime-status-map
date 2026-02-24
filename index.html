@@ -525,7 +525,7 @@ async function loadWRL(){
       const key = p.site.trim();
 
       const marker = new mapboxgl.Marker(el)
-		.setLngLat([lng, lat])
+	.setLngLat([lng, lat])
         .setPopup(popup);
 
       if (wrlVisible) {
@@ -733,8 +733,8 @@ map.on('load',async()=>{
           return;
         }
 
-        // Open popup แบบ force
-        m.marker.getPopup().addTo(map);
+        // Open popup
+        m.marker.togglePopup();
 
       });
 	  
@@ -1057,8 +1057,8 @@ function addMarkerFromData(p,status,device,ack){
       return;
     }
 
-    // Open popup แบบ force
-    m.marker.getPopup().addTo(map);
+    // Open popup
+    m.marker.togglePopup();
 
   });
   

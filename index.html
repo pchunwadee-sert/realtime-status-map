@@ -483,7 +483,7 @@ async function loadWRL(){
     r.data.forEach(p=>{
 
       // ตรวจ lat/lng แบบปลอดภัย
-	  const lat = Number(p.lat);
+      const lat = Number(p.lat);
       const lng = Number(p.lng);
       if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
@@ -509,11 +509,7 @@ async function loadWRL(){
       }
 
       // สร้าง popup WRL
-      const popup = new mapboxgl.Popup({
-        offset: 10,
-        closeButton: true,
-        closeOnClick: true
-      }).setHTML(`
+      const popup = new mapboxgl.Popup({offset: 10, closeButton: true}).setHTML(`
         <div style="font-size:13px;font-weight:600;">
           ${p.site ?? "-"}
         </div>
@@ -528,6 +524,19 @@ async function loadWRL(){
       const marker = new mapboxgl.Marker(el)
 	.setLngLat([lng, lat])
         .setPopup(popup);
+
+      // ✅ FIX iPad Pencil popup (WRL)
+      el.addEventListener('pointerup', e => {
+        e.stopPropagation();
+
+        // ถ้ามี popup เดิม → ปิดก่อน
+        if(currentPopup){
+          currentPopup.remove();
+          currentPopup = null;
+        }
+        popup.addTo(map);
+        currentPopup = popup;
+      });
 
       if (wrlVisible) {
         marker.addTo(map);
@@ -681,10 +690,7 @@ map.on('load',async()=>{
 
     const marker=new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup({
-        offset:14, 
-        closeOnClick:true
-      }).setHTML(`
+      .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
 		<b>IP:</b> ${p.ipAddress ?? "-"}<br> 
@@ -794,6 +800,7 @@ map.on('load',async()=>{
     // ถ้ากดบน marker หรือ popup ไม่ต้องปิด
     if(
       target.closest('.marker') ||
+      target.closest('.wrl-marker') ||
       target.closest('.mapboxgl-popup')
     ) return;
 
@@ -1033,10 +1040,7 @@ function addMarkerFromData(p,status,device,ack){
   //สร้าง Marker บนแผนที่ (จุดที่เพิ่ม marker ลง map)
   const marker=new mapboxgl.Marker(el)
     .setLngLat([lng, lat])
-    .setPopup(new mapboxgl.Popup({
-      offset:14, 
-      closeOnClick:true
-    }).setHTML(`
+    .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
       <b>Site:</b> ${p.siteId}<br>
       <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
       <b>IP:</b> ${p.ipAddress ?? "-"}<br>

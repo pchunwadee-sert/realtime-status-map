@@ -787,7 +787,7 @@ map.on('load',async()=>{
 
 
   /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
-  map.on('pointerdown', (e) => {
+  map.getCanvas().addEventListener('pointerdown', (e) => {
 
     // ถ้ากดบน marker ไม่ต้องปิด
     if(e.originalEvent.target.closest('.marker')) return;

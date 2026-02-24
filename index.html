@@ -793,7 +793,7 @@ map.on('load',async()=>{
 
 
   /* ===== CLICK บนพื้นที่ว่าง ให้ปิด popup ===== */
-  map.getCanvas().addEventListener('pointerdown', (e) => {
+  map.getCanvas().addEventListener('click', (e) => {
 
     const target = e.target;
 
@@ -883,6 +883,12 @@ function runSearch(){
     alert("พบข้อมูลจาก Search แต่ไม่มีใน Filter ของ Status / Device / Ack.");
     searchActive=false;   //reset state
     return;
+  }
+
+  // 🔴 ปิด popup (ถ้ามี)  แต่ต้องมีข้อมูลการ search ก่อน จึงจะให้ปิด popup
+  if(currentPopup){
+    currentPopup.remove();
+    currentPopup = null;
   }
 
   searchResultSet=matched;

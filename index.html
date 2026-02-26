@@ -92,13 +92,12 @@ body{margin:0;}
 
 /* ===== PANEL GROUP (VERTICAL STACK) ===== */
 .panel-group{
-  position:absolute;
-  left:10px;
-  top:10px;
+  flex:1;
   display:flex;
   flex-direction:column;
-  gap:30px;
-  z-index:999;
+  gap:25px;
+
+  overflow:hidden;   /* กันล้น */
 }
 
 /* ===== SEARCH GROUP ===== */
@@ -108,15 +107,19 @@ body{margin:0;}
 
 /* ===== PANEL WRAP (STATUS / DEVICE / ACK) ===== */
 .panel-wrap{
-  display:grid;
-  grid-template-columns:max-content;
-  gap:0px; 
+  display:flex;
+  flex-direction:column;
+  flex:1;                  /* ให้กินพื้นที่ที่เหลือ */
+  min-height:0;            /* สำคัญมากสำหรับ scroll */
+  overflow-y:auto; 
+  overflow-x:hidden;
+  align-self:flex-start;   /* ไม่ให้ยืดเต็มความกว้าง  */
 }
 
 /* ===== PANEL BOX ===== */
 .panel-box{}
-.status-box{margin-bottom:10px;}
-.device-box{margin-bottom:10px;}
+.status-box{margin-bottom:6px;}
+.device-box{margin-bottom:6px;}
 .ack-box{margin-bottom:0;}
 
 /* ===== PANEL ===== */
@@ -223,7 +226,7 @@ body{margin:0;}
 /* กล่องควบคุมปุ่ม */
 .map-control {
   position: absolute;   /* ลอย */
-  top: 15px;            /* ห่างจากขอบบน */
+  top: 35px;            /* ห่างจากขอบบน */
   right: 15px;          /* ห่างจากขอบขวา */
   z-index: 1000;        /* ให้อยู่เหนือ panel อื่น */
 }
@@ -271,15 +274,106 @@ body{margin:0;}
 
 /* ===== LATEST UPDATE BOX ===== */
 #latestUpdateBox{
-  position:absolute;
-  left:12px;
-  bottom:12px;
   background:rgba(255,255,255,.95);
   padding:6px 10px;
   border-radius:6px;
   font-family:sans-serif;
   font-size:13px;
+  margin-top:auto; 
   box-shadow:0 2px 6px rgba(0,0,0,.25);
+  align-self:flex-start;
+}
+/* ========================= */
+
+/* ===== TOP CENTER TITLE ===== */
+#topTitle{
+  position:absolute;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,0.75);
+  backdrop-filter: blur(4px);
+  padding:8px 18px;
+  border-radius:8px;
+  border-bottom:2px solid #1a73e8;   /* เส้นแนวยาว */
+  font-family:sans-serif;
+  font-size:20px;
+  font-weight:bold;
+  letter-spacing:0.5px;
+  color:#1558b0; 
+  text-align:center;
+
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+  z-index:1000;
+}
+/* ========================= */
+
+/* ===== Modern Modal Alert (กล่องแจ้งเตือน) ===== */
+.custom-alert{    /* ทำให้ overlay คลุมเต็มพื้นที่ */
+  position:absolute;             
+  inset:0;                        
+  background:rgba(0,0,0,.45);   
+  backdrop-filter: blur(4px);     
+  display:flex;                  
+  align-items:center;
+  justify-content:center;
+  z-index:9999;  
+}
+.alert-box{    /* พื้นหลังสีขาวของกล่อง */
+  background:#ffffff;
+  min-width:200px; 
+  max-width:400px; 
+  width:80%; 
+  padding:24px 22px;
+  border-radius:16px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.alert-icon{    /* ขยาย emoji ให้เด่น */
+  font-size:34px;
+  margin-bottom:12px;
+}
+.alert-title{
+  font-weight:600;
+  font-size:18px;
+  margin-bottom:8px;
+}
+.alert-text{    /* ทำให้ข้อความไม่ดำสนิท ดู soft กว่า */
+  font-size:14px;
+  color:#555;
+  margin-bottom:18px;
+  line-height:1.5;
+}
+.alert-btn{    /* ปุ่มสีน้ำเงิน  */
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:8px;
+  font-size:14px;
+  cursor:pointer;
+  transition:.2s;
+}
+.alert-btn:hover{    /* เวลาเอาเมาส์ชี้: สีเข้มขึ้น ดู interactive */
+  background:#1d4ed8;
+  transform:translateY(-1px);
+}
+/* ========================= */
+
+/* ===== LEFT UI CONTAINER (NEW) ===== */
+.left-ui{
+  position:absolute;
+  left:10px;
+  top:55px;
+  bottom:12px;          /* เว้นขอบล่าง */
+  display:flex;
+  flex-direction:column;
+  gap:12px;
   z-index:999;
 }
 
@@ -290,19 +384,23 @@ body{margin:0;}
 
 <div id="app">
 
-<!--  กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF -->  
-<div class="map-control">
-  <button id="btnWRL" class="off" style="display:none">WRL : OFF</button>  
-</div>
+  <!-- ===== TOP TITLE ===== -->
+  <div id="topTitle">
+    SCADA Communication Status Monitoring
+  </div>
+
+  <!--  กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF -->  
+  <div class="map-control">
+    <button id="btnWRL" class="off" style="display:none">
+      WRL : OFF
+    </button>  
+  </div>
+
+  <div id="map"></div>
 
 
-<div id="map"></div>
-
-<!-- ===== LATEST UPDATE (Bottom Left) ===== -->
-<div id="latestUpdateBox">
-  Update : <span id="latestUpdateText">-</span>
-</div>
-
+<div class="left-ui">
+<!-- ------------------------------------------------------ -->
 <!-- ===== PANEL GROUP (VERTICAL) ===== -->
 <div class="panel-group">
 
@@ -382,6 +480,17 @@ body{margin:0;}
 
   </div>
 </div>
+<!-- ------------------------------------------------------ -->
+
+<!-- ------------------------------------------------------ -->
+<!-- ===== LATEST UPDATE (Bottom Left) ===== -->
+<div id="latestUpdateBox">
+  Update : <span id="latestUpdateText">-</span>
+</div>
+<!-- ------------------------------------------------------ -->
+
+</div>
+
 
 <script>
 mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21remZqZDdrMDEwbzNlc2E2b3htZWM2dyJ9.4BEW_l9sQlPzkMt5SyyNiQ';
@@ -464,6 +573,27 @@ let filterActive=false;
 // zIndex priority (higher = more important)
 const Z_INDEX = {selected: 1000, wrl_false: 110, wrl_true: 100, hidden: 1};
 const zBase={Offline:60,Connecting:70,"Telemetry Failure":50,Initializing:40,Online:10,none:30,_default:20};
+
+
+//★ ฟังก์ชันดูพิกัด เต็มหน้าจอ
+function fitToBounds(bounds){
+
+  const rect = document
+    .getElementById("topTitle")
+    ?.getBoundingClientRect();
+
+  const topPadding = rect ? rect.bottom + 20 : 40;
+
+  map.fitBounds(bounds,{
+    padding:{
+      top: topPadding,
+      bottom: 40,
+      left: 40,
+      right: 40
+    }
+  });
+
+}
 
 async function loadWRL(){
   try{
@@ -644,6 +774,57 @@ function toggleWRL(){
   }
 }
 
+
+function attachPopupProtection(el, marker){
+
+  // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
+  el.addEventListener('click', e => {
+
+    const m = marker._dataRef;
+    if(!m) return;
+
+    const allowPopup =
+      (!searchActive || m._passSearch) &&
+      (!filterActive || m._passFilter);
+
+    if(!allowPopup){
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
+  // -end-
+
+  // ✅ FIX iPad Pencil popup
+  el.addEventListener('pointerup', e => {
+
+    const m = marker._dataRef;
+    if(!m) return;
+
+    const allowPopup =
+      (!searchActive || m._passSearch) &&
+      (!filterActive || m._passFilter);
+
+    if(!allowPopup){
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    // ★ ถ้ามี popup เดิม → ปิดก่อน
+    if(currentPopup){
+      currentPopup.remove();
+      currentPopup = null;
+    }
+
+    // ★ เปิด popup ของ marker นี้
+    const popup = marker.getPopup();
+    popup.addTo(map);
+    currentPopup = popup;
+
+  });
+}
+
+
 map.on('load',async()=>{
   
   const res = await fetch(API_URL);
@@ -710,54 +891,11 @@ map.on('load',async()=>{
       `))
       .addTo(map);
 
-      // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
-      el.addEventListener('click',e=>{
-        const m=markers.find(x=>x.el===el);
-        if(!m) return;
-
-        const allowPopup =
-          (!searchActive || m._passSearch) &&
-          (!filterActive || m._passFilter);
-
-        if(!allowPopup){
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      });
-      // -end- 
-
-      // ✅ FIX iPad Pencil popup
-      el.addEventListener('pointerup', e => {
-
-        const m = markers.find(x => x.el === el);
-        if(!m) return;
-
-        const allowPopup =
-          (!searchActive || m._passSearch) &&
-          (!filterActive || m._passFilter);
-
-        if(!allowPopup){
-          e.stopPropagation();
-          e.preventDefault();
-          return;
-        }
-
-        // ----- CONTROLLED POPUP -----
-        // ถ้ามี popup เดิม → ปิดก่อน
-        if(currentPopup){
-          currentPopup.remove();
-          currentPopup = null;
-        }
-        // เปิด popup ของ marker นี้
-        const popup = m.marker.getPopup();
-        popup.addTo(map);
-        currentPopup = popup;
-
-      });
+    attachPopupProtection(el, marker);
 	  
     const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
 
-    markers.push({
+    const markerObj = {
       key,
       marker,
       el,
@@ -766,7 +904,7 @@ map.on('load',async()=>{
       acknowledge:ack,
       siteId:p.siteId,
       operationId:p.operationId,
-	  ipAddress:p.ipAddress,  
+      ipAddress:p.ipAddress,  
       lat:lat,
       lng:lng,
 
@@ -775,12 +913,16 @@ map.on('load',async()=>{
       _passFilter:true
       // -end-
 
-    });
+    };
+    markers.push(markerObj);
+
+    el._markerRef = marker;
+    marker._dataRef = markerObj;
 
     bounds.extend([lng, lat]);
   });
 
-  map.fitBounds(bounds,{padding:60});
+  fitToBounds(bounds);
 
   activeStatuses.add("Connecting");
   activeAck="No";
@@ -893,14 +1035,14 @@ function runSearch(){
 
   const searched=markers.filter(m=>objectToSearchString(m).includes(q));
   if(searched.length===0){
-    alert("ไม่พบข้อมูลที่ค้นหา");
+    showWarning("ไม่พบข้อมูลที่ค้นหา");
     searchActive=false;   //reset state
     return;
   }
 
   const matched=searched.filter(m=>byStatus(m)&&byDevice(m)&&byAck(m));
   if(matched.length===0){
-    alert("พบข้อมูลจาก Search แต่ไม่มีใน Filter ของ Status / Device / Ack.");
+    showWarning("พบข้อมูลจาก Search แต่ไม่พบใน Filter ของ Status / Device / Ack.");
     searchActive=false;   //reset state
     return;
   }
@@ -941,8 +1083,39 @@ function runSearch(){
 
   matched.length===1
     ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
-    : map.fitBounds(b,{padding:80});
+    : fitToBounds(b);
 }
+
+//สร้างข้อความเตือน
+function showWarning(msg){
+
+  /* ป้องกันสร้างซ้ำ */
+  if(document.querySelector(".custom-alert")) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "custom-alert";
+
+  overlay.innerHTML = `
+    <div class="alert-box">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-title">Search Not Found</div>
+      <div class="alert-text">${msg}</div>
+      <button class="alert-btn">OK</button>
+    </div>
+  `;
+
+  /* ปิดเมื่อกดปุ่ม */
+  overlay.querySelector(".alert-btn").onclick = () => overlay.remove();
+
+  /* ปิดเมื่อกดพื้นหลัง */
+  overlay.onclick = (e) => {
+    if(e.target === overlay) overlay.remove();
+  };
+
+  /* สำคัญ: ต้อง append เข้า #app ไม่ใช่ body */
+  document.getElementById("app").appendChild(overlay);
+}
+
 
 function clearSearch(){
   searchInput.value="";
@@ -980,7 +1153,8 @@ document.querySelectorAll('[data-status]').forEach(r=>{
       document.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
       clearSearch();
 
-      if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60});
+      if(!bounds.isEmpty())  fitToBounds(bounds);
+
       return;
     }
     activeStatuses.has(s)?activeStatuses.delete(s):activeStatuses.add(s);
@@ -1091,53 +1265,11 @@ function addMarkerFromData(p,status,device,ack){
     `))
     .addTo(map);
 
-  // popup protection เหมือน load แรก
-  el.addEventListener('click',e=>{
-    const m=markers.find(x=>x.el===el);
-    if(!m) return;
-
-    const allowPopup =
-      (!searchActive || m._passSearch) &&
-      (!filterActive || m._passFilter);
-
-    if(!allowPopup){
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  });
-
-  // ✅ FIX iPad Pencil popup
-  el.addEventListener('pointerup', e => {
-
-    const m = markers.find(x => x.el === el);
-    if(!m) return;
-
-    const allowPopup =
-      (!searchActive || m._passSearch) &&
-      (!filterActive || m._passFilter);
-
-    if(!allowPopup){
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-
-    // ----- CONTROLLED POPUP -----
-    // ถ้ามี popup เดิม → ปิดก่อน
-    if(currentPopup){
-      currentPopup.remove();
-      currentPopup = null;
-    }
-    // เปิด popup ของ marker นี้
-    const popup = m.marker.getPopup();
-    popup.addTo(map);
-    currentPopup = popup;
-
-  });
+  attachPopupProtection(el, marker);
   
   const key = `${p.siteId ?? "nosite"}_${p.ipAddress ?? "noip"}`;
 
-  markers.push({
+  const markerObj = {
     key,
     marker,
     el,
@@ -1151,7 +1283,13 @@ function addMarkerFromData(p,status,device,ack){
     lng:lng,
     _passSearch:true,
     _passFilter:true
-  });
+  };
+
+  markers.push(markerObj);
+
+  el._markerRef = marker;
+  marker._dataRef = markerObj;
+
 }
 
 
@@ -1395,4 +1533,3 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
-

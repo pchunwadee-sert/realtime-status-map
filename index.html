@@ -377,6 +377,11 @@ body{margin:0;}
   z-index:999;
 }
 
+/* ===== Selected Marker (popup open) ตอนคลิกเลื่อกแล้ว ===== */
+.marker-selected{
+  background:#000 !important;
+}
+
 </style>
 </head>
 
@@ -558,6 +563,7 @@ let retried = false;  //ตัวแปรตรวจสอบว่า timesta
 
 let latestWRLData = [];  //เพิ่มตัวแปรเก็บ WRL ล่าสุด
 let currentPopup = null;  //ตัวแปร global ควบคุม popup
+let activeMarkerElement = null;  //ตัวแปรเก็บ marker ที่ active
 
 let bounds=new mapboxgl.LngLatBounds();
 let activeStatuses=new Set(),activeDevice=null,activeAck=null;
@@ -657,18 +663,12 @@ async function loadWRL(){
 	.setLngLat([lng, lat])
         .setPopup(popup);
 
-      // ✅ FIX iPad Pencil popup (WRL)
-      el.addEventListener('pointerup', e => {
-        e.stopPropagation();
+      marker._dataRef = {
+        _passSearch: true,
+        _passFilter: true
+      };
 
-        // ถ้ามี popup เดิม → ปิดก่อน
-        if(currentPopup){
-          currentPopup.remove();
-          currentPopup = null;
-        }
-        popup.addTo(map);
-        currentPopup = popup;
-      });
+      attachPopupProtection(el, marker);
 
       if (wrlVisible) {
         marker.addTo(map);
@@ -810,6 +810,11 @@ function attachPopupProtection(el, marker){
       return;
     }
 
+    // ★ ถ้ามี popup เดิม → ล้างสีตัวเก่า
+    if(activeMarkerElement){
+      activeMarkerElement.classList.remove("marker-selected");
+    }
+
     // ★ ถ้ามี popup เดิม → ปิดก่อน
     if(currentPopup){
       currentPopup.remove();
@@ -820,6 +825,10 @@ function attachPopupProtection(el, marker){
     const popup = marker.getPopup();
     popup.addTo(map);
     currentPopup = popup;
+
+    // ★ ทำให้ marker นี้เป็นสีดำ
+    el.classList.add("marker-selected");
+    activeMarkerElement = el;
 
   });
 }
@@ -966,9 +975,16 @@ map.on('load',async()=>{
       target.closest('.mapboxgl-popup')
     ) return;
 
+    // ปิด popup
     if (currentPopup) {
       currentPopup.remove();
       currentPopup = null;
+    }
+
+    // ล้าง marker สีดำ
+    if(activeMarkerElement){
+      activeMarkerElement.classList.remove("marker-selected");
+      activeMarkerElement = null;
     }
   });
 

@@ -32,7 +32,7 @@ body{margin:0;}
 .marker{
   border-radius:50%;
   transition:opacity .2s, box-shadow .2s, border .2s;
-  box-sizing:border-box;
+  box-sizing:content-box;
   cursor: default;   /* ค่าเริ่มต้น = กดไม่ได้ */
 }
 .marker:not(.gray){
@@ -53,30 +53,31 @@ body{margin:0;}
 /* ===== FILTERED ===== */
 .gray{
   background:#ccc!important;
+  border:1px solid #ccc!important;
   opacity:.35;
   animation:none!important;
   box-shadow:none!important;
-  border:none!important;
 }
 
 /* ===== BLINK ===== */
 .force-blink{animation:blink 1s infinite!important;}
 
 /* ===== STATUS COLOR ===== */
-.offline{width:8.5px;height:8.5px;background:#FF0000;}
-.connecting{width:8.5px;height:8.5px;background:#FF9900;}
-.telemetry{width:8.5px;height:8.5px;background:#FFFF00;}
-.initializing{width:8.5px;height:8.5px;background:#00FF00;}
-.online{width:8.5px;height:8.5px;background:#009900;}
-.none{width:8.5px;height:8.5px;background:#F6F6F6;}
+.offline{width:6px;height:6px;background:#FF0000;border:1.5px solid #CC0000;}
+.connecting{width:6px;height:6px;background:#FF9900;border:1.5px solid #CC7A00;}
+.telemetry{width:6px;height:6px;background:#FFFF00;border:1.5px solid #B3B300;}
+.initializing{width:6px;height:6px;background:#00FF00;border:1.5px solid #009900;}
+.online{width:6px;height:6px;background:#009900;border:1.5px solid #1B5E20;}
+.none{width:6px;height:6px;background:#F6F6F6;border:1.5px solid #4D4D4D;}
 
 /* ===== BLINK BORDER ===== */
-.force-blink.offline{border:1.5px solid #CC0000;box-shadow:0 0 6px rgba(255,0,0,.7);}
-.force-blink.connecting{border:1.5px solid #CC7A00;box-shadow:0 0 6px rgba(255,153,0,.7);}
-.force-blink.telemetry{border:1.5px solid #B3B300;box-shadow:0 0 6px rgba(255,255,0,.7);}
-.force-blink.initializing{border:1.5px solid #009900;box-shadow:0 0 6px rgba(0,255,0,.7);}
-.force-blink.online{border:1.5px solid #1B5E20;box-shadow:0 0 6px rgba(46,125,50,.7);}
-.force-blink.none{border:1.5px solid #4D4D4D;box-shadow:0 0 6px rgba(0,0,0,.7);}
+.force-blink.offline{box-shadow:0 0 6px rgba(255,0,0,.7);}
+.force-blink.connecting{box-shadow:0 0 6px rgba(255,153,0,.7);}
+.force-blink.telemetry{box-shadow:0 0 6px rgba(255,255,0,.7);}
+.force-blink.initializing{box-shadow:0 0 6px rgba(0,255,0,.7);}
+.force-blink.online{box-shadow:0 0 6px rgba(46,125,50,.7);}
+.force-blink.none{box-shadow:0 0 6px rgba(0,0,0,.7);}
+
 
 @keyframes blink{
   0%{opacity:1}
@@ -379,8 +380,20 @@ body{margin:0;}
 
 /* ===== Selected Marker (popup open) ตอนคลิกเลื่อกแล้ว ===== */
 .marker-selected{
-  background:#000 !important;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
 }
+.marker-selected::before{
+  content:"";
+  position:absolute;
+  inset:0.5px;         
+  background:#000;
+  border-radius:50%;
+  pointer-events:none;
+}
+
 
 </style>
 </head>
@@ -882,7 +895,7 @@ map.on('load',async()=>{
 
     const marker=new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup({offset:14}).setHTML(`
+      .setPopup(new mapboxgl.Popup({offset:10}).setHTML(`
         <b>Site:</b> ${p.siteId}<br>
         <b>Opt. ID.:</b> ${p.operationId ?? "-"}<br>
 	<b>IP:</b> ${p.ipAddress ?? "-"}<br> 
@@ -1102,6 +1115,34 @@ function runSearch(){
     : fitToBounds(b);
 }
 
+// ทำให้การ Search ได้ข้อมูลล่าสุด กรณีเมื่อ Search Mode เปิดอยู่ หลังการ Refresh Delta
+function reApplySearchAfterDelta(){
+
+  if(!searchActive) return;
+
+  const q = searchInput.value.trim().toLowerCase();
+  if(!q){
+    clearSearch();
+    return;
+  }
+
+  const searched = markers.filter(m =>
+    objectToSearchString(m).includes(q)
+  );
+
+  const matched = searched.filter(m =>
+    byStatus(m) && byDevice(m) && byAck(m)
+  );
+
+  searchResultSet = matched;
+  searchCount.textContent = matched.length;
+
+  if(matched.length === 0){
+    clearSearch();
+  }
+}
+
+
 //สร้างข้อความเตือน
 function showWarning(msg){
 
@@ -1161,6 +1202,12 @@ document.querySelectorAll('[data-status]').forEach(r=>{
       if(currentPopup){
         currentPopup.remove();
         currentPopup = null;
+      }
+
+      // ล้าง marker สีดำที่เคยเลือก
+      if(activeMarkerElement){
+        activeMarkerElement.classList.remove("marker-selected");
+        activeMarkerElement = null;
       }
 
       activeStatuses.clear();
@@ -1443,6 +1490,7 @@ async function advancedDeltaRefresh(){
       }
     });
 
+    reApplySearchAfterDelta();
     applyFilter();
 
     // ===== REBUILD BOUNDS AFTER DELTA =====

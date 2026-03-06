@@ -388,7 +388,7 @@ body{margin:0;}
 .marker-selected::before{
   content:"";
   position:absolute;
-  inset:0.75px;         
+  inset:1px;         
   background:#000;
   border-radius:50%;
   pointer-events:none;
@@ -788,6 +788,22 @@ function toggleWRL(){
 }
 
 
+// Clear Popup and Black Marker Point
+function clearActivePopupAndMarker(){
+
+  if(currentPopup){
+    currentPopup.remove();
+    currentPopup = null;
+  }
+
+  if(activeMarkerElement){
+    activeMarkerElement.classList.remove("marker-selected");
+    activeMarkerElement = null;
+  }
+
+}
+
+
 function attachPopupProtection(el, marker){
 
   // -start- ★ ADD : block popup if not allowed by search / filter (allow popup only when Marker label is visible)
@@ -823,16 +839,8 @@ function attachPopupProtection(el, marker){
       return;
     }
 
-    // ★ ถ้ามี popup เดิม → ล้างสีตัวเก่า
-    if(activeMarkerElement){
-      activeMarkerElement.classList.remove("marker-selected");
-    }
-
-    // ★ ถ้ามี popup เดิม → ปิดก่อน
-    if(currentPopup){
-      currentPopup.remove();
-      currentPopup = null;
-    }
+    // ★ ลบ popup + จุดดำ
+    clearActivePopupAndMarker();
 
     // ★ เปิด popup ของ marker นี้
     const popup = marker.getPopup();
@@ -988,17 +996,9 @@ map.on('load',async()=>{
       target.closest('.mapboxgl-popup')
     ) return;
 
-    // ปิด popup
-    if (currentPopup) {
-      currentPopup.remove();
-      currentPopup = null;
-    }
+    // ปิด popup + ล้าง marker สีดำ
+    clearActivePopupAndMarker();
 
-    // ล้าง marker สีดำ
-    if(activeMarkerElement){
-      activeMarkerElement.classList.remove("marker-selected");
-      activeMarkerElement = null;
-    }
   });
 
 });
@@ -1076,10 +1076,19 @@ function runSearch(){
     return;
   }
 
-  // 🔴 ปิด popup (ถ้ามี)  แต่ต้องมีข้อมูลการ search ก่อน จึงจะให้ปิด popup
-  if(currentPopup){
-    currentPopup.remove();
-    currentPopup = null;
+  // 🔎 ตรวจว่าปัจจุบัน popup marker อยู่ในผล search หรือไม่
+  let keepPopup = false;
+
+  if(activeMarkerElement){
+    const markerObj = activeMarkerElement._markerRef?._dataRef;
+    if(markerObj){
+      keepPopup = matched.includes(markerObj);
+    }
+  }
+
+  // 🔴 ถ้าไม่อยู่ในผล search ให้ปิด popup + ล้าง marker สีดำ  แต่ต้องมีข้อมูลการ search ก่อน จึงจะให้ปิด popup
+  if(!keepPopup){
+    clearActivePopupAndMarker();
   }
 
   searchResultSet=matched;
@@ -1175,6 +1184,9 @@ function showWarning(msg){
 
 
 function clearSearch(){
+  // 🔴 ลบ popup + จุดดำ
+  clearActivePopupAndMarker();
+
   searchInput.value="";
   searchResultSet=null;
   searchIndicator.style.display="none";
@@ -1198,17 +1210,8 @@ document.querySelectorAll('[data-status]').forEach(r=>{
   r.onclick=()=>{
     const s=r.dataset.status;
     if(s==="TOTAL"){
-      // 🔴 ปิด popup ที่เปิดอยู่
-      if(currentPopup){
-        currentPopup.remove();
-        currentPopup = null;
-      }
-
-      // ล้าง marker สีดำที่เคยเลือก
-      if(activeMarkerElement){
-        activeMarkerElement.classList.remove("marker-selected");
-        activeMarkerElement = null;
-      }
+      // 🔴 ลบ popup + จุดดำ
+      clearActivePopupAndMarker();  
 
       activeStatuses.clear();
       activeDevice=null;
@@ -1222,6 +1225,7 @@ document.querySelectorAll('[data-status]').forEach(r=>{
     }
     activeStatuses.has(s)?activeStatuses.delete(s):activeStatuses.add(s);
     r.classList.toggle('active');
+
     applyFilter();
   };
 });
@@ -1232,6 +1236,7 @@ document.querySelectorAll('[data-device]').forEach(r=>{
     activeDevice=(d==="ALL"||activeDevice===d)?null:d;
     document.querySelectorAll('[data-device]').forEach(x=>x.classList.remove('active'));
     if(activeDevice) r.classList.add('active');
+
     applyFilter();
   };
 });
@@ -1242,6 +1247,7 @@ document.querySelectorAll('[data-ack]').forEach(r=>{
     activeAck=(a==="ALL"||activeAck===a)?null:a;
     document.querySelectorAll('[data-ack]').forEach(x=>x.classList.remove('active'));
     if(activeAck) r.classList.add('active');
+
     applyFilter();
   };
 });
@@ -1274,6 +1280,14 @@ function applyFilter(){
     m.el.classList.toggle('gray', !visible);
     m.el.classList.toggle('force-blink', visible && blink);
     m.el.style.zIndex = visible ? (zBase[m.status] ?? zBase._default) : Z_INDEX.hidden;
+
+    // ★ ADD : ถ้า marker ที่มี popup อยู่ กลายเป็นสีเทา → ลบ popup + จุดดำ
+    
+    if(!visible && activeMarkerElement === m.el){
+      
+      clearActivePopupAndMarker();
+    
+    }
   });
 
   document.querySelectorAll('.dot').forEach(d=>d.classList.remove('force-blink'));
@@ -1597,5 +1611,3 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
-
-

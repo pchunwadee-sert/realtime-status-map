@@ -570,7 +570,7 @@ window.addEventListener('orientationchange', () => {
 const markers=[];
 const wrlMarkers = new Map();
 
-let wrlVisible = false;  //กำหนดค่าเริ่มต้น จะให้ WRL : ON หรือ OFF
+let wrlVisible = false;  //ตัวแปร กำหนดค่าเริ่มต้นให้ WRL >> OFF
 let lastUpdateStamp=null;  //ตัวแปรเก็บ Timestamp สำหรับทำ Advanced Delta Refresh
 let retried = false;  //ตัวแปรตรวจสอบว่า timestamp ได้มีการ retry Refresh ไปแล้วหรือยัง
 
@@ -767,24 +767,34 @@ function toggleWRL(){
   const btn = document.getElementById("btnWRL");
 
   if(wrlVisible){
-    // แสดง marker ทั้งหมด
+
+    // 🟢 แสดง marker
     wrlMarkers.forEach(m => m.addTo(map));
 
-    //sync เมื่อตอนขณะเปิด WRL
+    // 🟢 sync เมื่อตอนขณะเปิด WRL
     if(latestWRLData.length){
       syncWRLStatus(latestWRLData);
+    }
+    // 🟢 restore popup
+    if(currentPopup && activeMarkerElement){
+      currentPopup.addTo(map);
     }
 
     btn.innerText = "WRL : ON";
     btn.classList.remove("off");
 
   }else{
-    // ซ่อน marker ทั้งหมด
+    // 🔴 ซ่อน popup ชั่วคราว
+    if(currentPopup){
+      currentPopup.remove();
+    }
+    // 🔴 ซ่อน marker ทั้งหมด
     wrlMarkers.forEach(m => m.remove());
+
     btn.innerText = "WRL : OFF";
     btn.classList.add("off");
-
   }
+
 }
 
 

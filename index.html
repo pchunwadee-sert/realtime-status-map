@@ -775,17 +775,27 @@ function toggleWRL(){
     if(latestWRLData.length){
       syncWRLStatus(latestWRLData);
     }
-    // 🟢 restore popup
-    if(currentPopup && activeMarkerElement){
-      currentPopup.addTo(map);
+    // 🟢 restore popup เฉพาะ WRL
+    if(
+      currentPopup &&
+      activeMarkerElement &&
+      activeMarkerElement.classList.contains("wrl-marker")
+    ){
+      if(!currentPopup.isOpen()){
+        currentPopup.addTo(map);
+      }
     }
 
     btn.innerText = "WRL : ON";
     btn.classList.remove("off");
 
   }else{
-    // 🔴 ซ่อน popup ชั่วคราว
-    if(currentPopup){
+    // 🔴 ซ่อน popup ชั่วคราว เฉพาะ WRL
+    if(
+      currentPopup &&
+      activeMarkerElement &&
+      activeMarkerElement.classList.contains("wrl-marker")
+    ){
       currentPopup.remove();
     }
     // 🔴 ซ่อน marker ทั้งหมด
@@ -1005,6 +1015,11 @@ map.on('load',async()=>{
       target.closest('.wrl-marker') ||
       target.closest('.mapboxgl-popup')
     ) return;
+
+    // ห้ามลบ state ของ popup ถ้า popup ที่ active เป็น WRL และ WRL ถูกปิดอยู่
+    if(!wrlVisible && activeMarkerElement?.classList.contains("wrl-marker")){
+      return;
+    }
 
     // ปิด popup + ล้าง marker สีดำ
     clearActivePopupAndMarker();

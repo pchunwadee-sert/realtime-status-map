@@ -804,7 +804,9 @@ function toggleWRL(){
     btn.innerText = "WRL : OFF";
     btn.classList.add("off");
   }
-
+	
+  // ⭐ บังคับ repaint สำหรับ iPad / Safari
+  map.triggerRepaint();
 }
 
 
@@ -1636,3 +1638,4 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
+

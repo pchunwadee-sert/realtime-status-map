@@ -896,14 +896,31 @@ function attachPopupProtection(el, marker){
     // ★ ลบ popup + จุดดำ
     clearActivePopupAndMarker();
 
-    // ★ เปิด popup ของ marker นี้
+    // ★ ดึง popup ของ marker นี้
     const popup = marker.getPopup();
+
+    // ★ เปิด popup บนแผนที่
     popup.addTo(map);
     currentPopup = popup;
 
     // ★ ทำให้ marker นี้เป็นสีดำ
     el.classList.add("marker-selected");
     activeMarkerElement = el;
+
+    // ★ กด X → popup ปิด + จุดดำหาย
+    popup.on("open", () => {
+      const closeBtn = popup.getElement()?.querySelector(".mapboxgl-popup-close-button");
+
+      if(!closeBtn) return;
+
+      closeBtn.onclick = () => {
+        if(activeMarkerElement === el){
+          el.classList.remove("marker-selected");
+          activeMarkerElement = null;
+          currentPopup = null;
+        }
+      };
+    });
 
   });
 }

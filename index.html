@@ -86,9 +86,14 @@ body{margin:0;}
 }
 
 /* ===== WRL BLINK ===== */
-.wrl-blink{
+.wrl-error-blink{
   animation:blink 0.5s infinite;
   box-shadow:0 0 6px rgba(255,0,0,.8);
+}
+.wrl-search-blink{
+  animation:blink 0.5s infinite;
+  box-shadow:0 0 6px rgba(0,0,0,.8);
+  background-color: #00FFFF !important; 
 }
 
 /* ===== PANEL GROUP (VERTICAL STACK) ===== */
@@ -511,7 +516,7 @@ body{margin:0;}
 
 
 <script>
-mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21remZqZDdrMDEwbzNlc2E2b3htZWM2dyJ9.4BEW_l9sQlPzkMt5SyyNiQ';
+mapboxgl.accessToken='pk.eyJ1IjoicHJhc2VydC1tYXBib3giLCJhIjoiY21rczRzanpqMTVrNDNlcHA3cndudHY2NCJ9.tE7h5N64QMt2FczrH06uCA';
 //const API_URL='https://script.google.com/macros/s/AKfycbyir64PbHBtTUzileqK0TXE9eu3ib5olFfAT32p24tAnwVjCb9NThC0gBXMFYZ2yn6Y/exec';
 
 // --- ล็อก API ---
@@ -655,7 +660,7 @@ async function loadWRL(){
         el.style.backgroundColor = "rgba(153,0,255,0.45)";   // false เข้ม
         el.style.border = "2.0px solid #ff0000";
         el.style.zIndex = Z_INDEX.wrl_false;
-        el.classList.add("wrl-blink");                       // กระพริบเฉพาะ false
+        el.classList.add("wrl-error-blink");                 // กระพริบเฉพาะ false
       } else {
         el.style.backgroundColor = "rgba(153,0,255,0.15)";   // true เดิม
         el.style.border = "1.5px solid #9900ff";
@@ -676,10 +681,13 @@ async function loadWRL(){
       const key = p.site.trim();
 
       const marker = new mapboxgl.Marker(el)
-	.setLngLat([lng, lat])
+        .setLngLat([lng, lat])
         .setPopup(popup);
 
       marker._dataRef = {
+        site: p.site ?? "",
+        // lat: lat,   //กำหนดไม่สามารถ Search พิกัดของ WRL ได้
+        // lng: lng,   //กำหนดไม่สามารถ Search พิกัดของ WRL ได้
         _passSearch: true,
         _passFilter: true
       };
@@ -737,7 +745,7 @@ function syncWRLStatus(newData){
     }	
 	
     el.dataset.status = String(newStatus);
-    el.classList.remove("wrl-blink");
+    el.classList.remove("wrl-error-blink");
 
     if(newStatus === false){
 
@@ -746,7 +754,7 @@ function syncWRLStatus(newData){
       el.style.border = "2.0px solid #ff0000";
       el.style.zIndex = Z_INDEX.wrl_false;
 
-      el.classList.add("wrl-blink");
+      el.classList.add("wrl-error-blink");
 
     }else{
 
@@ -906,8 +914,8 @@ function attachPopupProtection(el, marker){
     // ★ ทำให้ marker นี้เป็นสีดำ
     el.classList.add("marker-selected");
     activeMarkerElement = el;
-	  
-    // ★ ปุ่ม X → ลบจุดดำ (แก้ bug iPad Pencil)
+
+    // ★ กด X → popup ปิด + จุดดำหาย (แก้ bug iPad Pencil)
     popup.once("open", () => {
       const closeBtn = popup.getElement()?.querySelector(".mapboxgl-popup-close-button");
 
@@ -920,8 +928,8 @@ function attachPopupProtection(el, marker){
           currentPopup = null;
         }
       });  
-    });	  
-	  
+    });
+
   });
 }
 
@@ -1132,21 +1140,57 @@ function objectToSearchString(obj){
 /* ★★★ UPDATED SEARCH (Search + Status + Device + Ack) ★★★ */
 function runSearch(){
   const q=searchInput.value.trim().toLowerCase();
-  if(!q) return;
+  
+  // clear WRL blink
+  wrlMarkers.forEach(marker=>{
+    const el = marker.getElement();
+    const data = marker._dataRef;
+    el.classList.remove("wrl-search-blink");
+    if(data){
+      data._passSearch = true;
+    }
+  });
+
+  if(!q){
+    clearSearch();
+    return;
+  }
+  
+  // ===== WRL SEARCH =====
+  let wrlMatchCount = 0;
+  
+  wrlMarkers.forEach(marker=>{
+    const data = marker._dataRef;
+    if(!data) return;
+
+    if(objectToSearchString(data).includes(q)){
+      marker.getElement().classList.add("wrl-search-blink");
+
+      data._passSearch = true;
+      wrlMatchCount++;
+    }else{
+      data._passSearch = false;
+    }
+  });
+  
+  // ===== AUTO OPEN WRL IF FOUND =====
+  if(wrlMatchCount>0 && !wrlVisible){
+    toggleWRL();
+  }
 
   // -start- ★ ADD : mark search active (allow popup only when Marker label is visible)
   searchActive=true;
   // -end-
 
   const searched=markers.filter(m=>objectToSearchString(m).includes(q));
-  if(searched.length===0){
+  if(searched.length===0 && wrlMatchCount===0){
     showWarning("ไม่พบข้อมูลที่ค้นหา");
     searchActive=false;   //reset state
     return;
   }
 
   const matched=searched.filter(m=>byStatus(m)&&byDevice(m)&&byAck(m));
-  if(matched.length===0){
+  if(matched.length===0 && wrlMatchCount===0){
     showWarning("พบข้อมูลจาก Search แต่ไม่พบใน Filter ของ Status / Device / Ack.");
     searchActive=false;   //reset state
     return;
@@ -1169,7 +1213,9 @@ function runSearch(){
 
   searchResultSet=matched;
   searchIndicator.style.display="";
-  searchCount.textContent=matched.length;
+  
+  //รวมผลการค้นหาของ Marker + WRL
+  searchCount.textContent = matched.length + wrlMatchCount;
 
   markers.forEach(m=>{
     m.el.classList.add('gray');
@@ -1195,9 +1241,17 @@ function runSearch(){
 
   updateCounters();
 
-  matched.length===1
-    ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
-    : fitToBounds(b);
+  if(matched.length===0 && wrlMatchCount>0){
+    const allWRLBounds = new mapboxgl.LngLatBounds();
+    wrlMarkers.forEach(marker=>{
+      allWRLBounds.extend(marker.getLngLat());
+    });
+    fitToBounds(allWRLBounds);
+  }else{
+    matched.length===1
+      ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
+      : fitToBounds(b);
+  }
 }
 
 // ทำให้การ Search ได้ข้อมูลล่าสุด กรณีเมื่อ Search Mode เปิดอยู่ หลังการ Refresh Delta
@@ -1271,6 +1325,10 @@ function clearSearch(){
   searchActive=false;
   markers.forEach(m=>m._passSearch=true);
   // -end-
+  
+  wrlMarkers.forEach(marker=>{
+    marker.getElement().classList.remove("wrl-search-blink");
+  });  
 
   applyFilter();
 }
@@ -1695,5 +1753,3 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
-
-

@@ -913,7 +913,7 @@ function attachPopupProtection(el, marker){
 
       if(!closeBtn) return;
 
-      closeBtn.addEventListener("click", () => {
+      closeBtn.addEventListener("pointerup", () => {
         if(activeMarkerElement === el){
           el.classList.remove("marker-selected");
           activeMarkerElement = null;
@@ -1695,4 +1695,5 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
+
 

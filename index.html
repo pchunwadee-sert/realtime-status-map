@@ -906,22 +906,22 @@ function attachPopupProtection(el, marker){
     // ★ ทำให้ marker นี้เป็นสีดำ
     el.classList.add("marker-selected");
     activeMarkerElement = el;
-
-    // ★ กด X → popup ปิด + จุดดำหาย
-    popup.on("open", () => {
+	  
+    // ★ ปุ่ม X → ลบจุดดำ (แก้ bug iPad Pencil)
+    popup.once("open", () => {
       const closeBtn = popup.getElement()?.querySelector(".mapboxgl-popup-close-button");
 
       if(!closeBtn) return;
 
-      closeBtn.onclick = () => {
+      closeBtn.addEventListener("click", () => {
         if(activeMarkerElement === el){
           el.classList.remove("marker-selected");
           activeMarkerElement = null;
           currentPopup = null;
         }
-      };
-    });
-
+      });  
+    });	  
+	  
   });
 }
 
@@ -1695,3 +1695,4 @@ startAlignedRefresh(5, 2, 15);
 
 </body>
 </html>
+

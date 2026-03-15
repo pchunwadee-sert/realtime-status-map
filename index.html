@@ -610,12 +610,12 @@ function fitToBounds(bounds){
     ?.getBoundingClientRect();
 
   const topPadding = rect ? rect.bottom + 20 : 40;
-
+//=======================================================================================================================================
   map.fitBounds(bounds,{
     padding:{
       top: topPadding,
       bottom: 40,
-      left: 40,
+      left: 300,  //เผื่อให้กว้างไว้ กรณี Search ไม่ให้ Marker ปรากฏภายในพื้นที่ของ panel
       right: 40
     }
   });
@@ -875,8 +875,11 @@ function attachPopupProtection(el, marker){
     if(!m) return;
 
     const allowPopup =
-      (!searchActive || m._passSearch) &&
-      (!filterActive || m._passFilter);
+      el.classList.contains("wrl-marker") ||
+      (
+        (!searchActive || m._passSearch) &&
+        (!filterActive || m._passFilter)
+      );
 
     if(!allowPopup){
       e.stopPropagation();
@@ -892,8 +895,11 @@ function attachPopupProtection(el, marker){
     if(!m) return;
 
     const allowPopup =
-      (!searchActive || m._passSearch) &&
-      (!filterActive || m._passFilter);
+      el.classList.contains("wrl-marker") ||
+      (
+        (!searchActive || m._passSearch) &&
+        (!filterActive || m._passFilter)
+      );
 
     if(!allowPopup){
       e.stopPropagation();

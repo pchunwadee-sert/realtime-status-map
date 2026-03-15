@@ -603,19 +603,19 @@ const zBase={Offline:60,Connecting:70,"Telemetry Failure":50,Initializing:40,Onl
 
 
 //★ ฟังก์ชันดูพิกัด เต็มหน้าจอ
-function fitToBounds(bounds){
+function fitToBounds(bounds, paddingLeft = 40){
 
   const rect = document
     .getElementById("topTitle")
     ?.getBoundingClientRect();
 
   const topPadding = rect ? rect.bottom + 20 : 40;
-	
+
   map.fitBounds(bounds,{
     padding:{
       top: topPadding,
       bottom: 40,
-      left: 280,  //เผื่อให้กว้างไว้ กรณี Search ไม่ให้ Marker ปรากฏภายในพื้นที่ของ panel
+      left: paddingLeft,  //กรณี Reset = 40, กรณี Search/Filter = paddingLeft
       right: 40
     }
   });
@@ -1256,7 +1256,7 @@ function runSearch(){
   }else{
     matched.length===1
       ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
-      : fitToBounds(b);
+      : fitToBounds(b, 280);
   }
 }
 

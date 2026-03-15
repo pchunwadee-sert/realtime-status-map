@@ -610,12 +610,12 @@ function fitToBounds(bounds){
     ?.getBoundingClientRect();
 
   const topPadding = rect ? rect.bottom + 20 : 40;
-//=======================================================================================================================================
+	
   map.fitBounds(bounds,{
     padding:{
       top: topPadding,
       bottom: 40,
-      left: 300,  //เผื่อให้กว้างไว้ กรณี Search ไม่ให้ Marker ปรากฏภายในพื้นที่ของ panel
+      left: 280,  //เผื่อให้กว้างไว้ กรณี Search ไม่ให้ Marker ปรากฏภายในพื้นที่ของ panel
       right: 40
     }
   });

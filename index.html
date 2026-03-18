@@ -402,9 +402,8 @@ body{margin:0;}
 /* ===== Update / Next (วันที่-เวลา ที่ Refresh ข้อมูล) ===== */
 .updateRow{
   display:grid;
-  grid-template-columns:47px 10px auto;
+  grid-template-columns:85px 10px auto;
 }
-
 
 </style>
 </head>
@@ -516,13 +515,13 @@ body{margin:0;}
 <div id="latestUpdateBox">
 
   <div class="updateRow">
-    <span>Update</span>
+    <span>Last Updated</span>
     <span>:</span>
     <span id="latestUpdateText">-</span>
   </div>
-
+  <hr>
   <div class="updateRow">
-    <span>Next</span>
+    <span>Next Refresh</span>
     <span>:</span>
     <span id="nextUpdateText">-</span>
   </div>
@@ -600,6 +599,7 @@ let retried = false;  //ตัวแปรตรวจสอบว่า timesta
 let dynamicOffsetSec = 15;  //ตัวแปรสำหรับ AUTO CALIBRATE NEXT TIME >> ค่าเริ่มต้น (delay server)
 let lastScheduledTime = null;  //ตัวแปรสำหรับ AUTO CALIBRATE NEXT TIME >> เก็บเวลาที่ควรยิงจริง
 let retryOffsetSec = 0;  //ตัวแปรสำหรับ AUTO CALIBRATE NEXT TIME >> เก็บเวลากรณีมี Retry 15 วินาที
+let nextUpdateTime = null;  //ตัวแปรเวลานับถอยหลัง
 
 let latestWRLData = [];  //ตัวแปรเก็บ WRL ล่าสุด
 let currentPopup = null;  //ตัวแปร global ควบคุม popup
@@ -1070,6 +1070,8 @@ map.on('load',async()=>{
 
   //----- start Scheduler ----- 
   startAlignedRefresh(5, 2, 15);
+
+  startCountdown();
 
   await loadWRL();
   
@@ -1776,7 +1778,30 @@ function updateNextDisplay() {
   d.setSeconds(
     d.getSeconds() + dynamicOffsetSec + retryOffsetSec
   );
-  document.getElementById("nextUpdateText").textContent = formatTime(d);
+
+  //⭐เก็บเวลาไว้ให้ countdown
+  nextUpdateTime = d;  
+
+  document.getElementById("nextUpdateText").textContent = formatTime(nextUpdateTime);
+}
+
+// ===== Set Countdown in second =====
+function startCountdown(){
+  setInterval(() => {
+
+    if(!nextUpdateTime) return;
+
+    const now = new Date();
+    const diffSec = Math.max(0, Math.round((nextUpdateTime - now) / 1000));
+
+    const text =
+      diffSec > 5
+        ? formatTime(nextUpdateTime) + " (" + diffSec + " sec.)"
+        : formatTime(nextUpdateTime) + " (refreshing...)";
+
+    document.getElementById("nextUpdateText").textContent = text;
+
+  }, 1000);
 }
 
 

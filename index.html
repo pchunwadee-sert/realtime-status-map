@@ -1286,7 +1286,7 @@ function runSearch(){
     clearActivePopupAndMarker();
   }
 
-  searchResultSet=matched;
+  searchResultSet = matched;
   searchIndicator.style.display="";
   
   //รวมผลการค้นหาของ Marker + WRL
@@ -1316,14 +1316,15 @@ function runSearch(){
 
   updateCounters();
 
-  if(matched.length===0 && wrlMatchCount>0){
+  //★ การ ZOOM ผลลัพธ์ ของการ Search
+  if(wrlMatchCount > 0){
     const allWRLBounds = new mapboxgl.LngLatBounds();
     wrlMarkers.forEach(marker=>{
       allWRLBounds.extend(marker.getLngLat());
     });
     fitToBounds(allWRLBounds);
   }else{
-    matched.length===1
+    matched.length === 1
       ? map.flyTo({center:[matched[0].lng,matched[0].lat],zoom:12})
       : fitToBounds(b, 300);
   }
